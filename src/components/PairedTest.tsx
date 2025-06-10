@@ -84,8 +84,8 @@ const PairedTest = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="two-sided">Two-sided (μd ≠ 0)</SelectItem>
-                  <SelectItem value="greater">Greater than (μd > 0)</SelectItem>
-                  <SelectItem value="less">Less than (μd < 0)</SelectItem>
+                  <SelectItem value="greater">Greater than (μd {'>'} 0)</SelectItem>
+                  <SelectItem value="less">Less than (μd {'<'} 0)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

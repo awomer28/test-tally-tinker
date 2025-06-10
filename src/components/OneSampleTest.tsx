@@ -82,8 +82,8 @@ const OneSampleTest = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="two-sided">Two-sided (μ ≠ μ₀)</SelectItem>
-                  <SelectItem value="greater">Greater than (μ > μ₀)</SelectItem>
-                  <SelectItem value="less">Less than (μ < μ₀)</SelectItem>
+                  <SelectItem value="greater">Greater than (μ {'>'} μ₀)</SelectItem>
+                  <SelectItem value="less">Less than (μ {'<'} μ₀)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
