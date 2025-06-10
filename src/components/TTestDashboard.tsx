@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Users, Activity } from "lucide-react";
@@ -74,20 +73,11 @@ const TTestDashboard = () => {
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Statistical Analysis Setup
-              </CardTitle>
-              <CardDescription>
-                Select variables from your dataset and choose the type of analysis
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               
               {/* Analysis Type Selection */}
               <div>
-                <Label className="text-base font-medium">Type of Analysis</Label>
+                <Label className="text-base font-medium">What do you want to analyze?</Label>
                 <Select value={analysisType} onValueChange={setAnalysisType}>
                   <SelectTrigger className="mt-2">
                     <SelectValue />
@@ -99,16 +89,16 @@ const TTestDashboard = () => {
                         Compare Two Groups
                       </div>
                     </SelectItem>
-                    <SelectItem value="paired">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-4 h-4" />
-                        Before & After Analysis
-                      </div>
-                    </SelectItem>
                     <SelectItem value="one-sample">
                       <div className="flex items-center gap-2">
                         <Upload className="w-4 h-4" />
                         Compare to Target Value
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="paired">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        Before & After Analysis
                       </div>
                     </SelectItem>
                   </SelectContent>
