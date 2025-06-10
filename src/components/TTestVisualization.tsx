@@ -87,7 +87,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                 stroke="#10b981" 
                 strokeWidth={3}
                 strokeDasharray="5 5"
-                label={{ value: `t = ${results.tStatistic.toFixed(2)}`, position: "topRight" }}
+                label={{ value: `t = ${results.tStatistic.toFixed(2)}`, position: "top" }}
               />
               {results.alternative === "two-sided" && (
                 <>
@@ -95,13 +95,13 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                     x={results.criticalValue} 
                     stroke="#ef4444" 
                     strokeWidth={2}
-                    label={{ value: `+${results.criticalValue.toFixed(2)}`, position: "topLeft" }}
+                    label={{ value: `+${results.criticalValue.toFixed(2)}`, position: "top" }}
                   />
                   <ReferenceLine 
                     x={-results.criticalValue} 
                     stroke="#ef4444" 
                     strokeWidth={2}
-                    label={{ value: `-${results.criticalValue.toFixed(2)}`, position: "topRight" }}
+                    label={{ value: `-${results.criticalValue.toFixed(2)}`, position: "top" }}
                   />
                 </>
               )}

@@ -96,7 +96,7 @@ const TwoSampleTest = () => {
               <Checkbox 
                 id="equal-variances"
                 checked={equalVariances}
-                onCheckedChange={setEqualVariances}
+                onCheckedChange={(checked) => setEqualVariances(checked === true)}
               />
               <Label htmlFor="equal-variances">Assume equal variances</Label>
             </div>
