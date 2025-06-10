@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Users, Activity } from "lucide-react";
@@ -77,7 +78,7 @@ const TTestDashboard = () => {
               
               {/* Analysis Type Selection */}
               <div>
-                <Label className="text-base font-medium">What do you want to analyze?</Label>
+                <Label className="text-base font-medium">Type of t-test analysis</Label>
                 <Select value={analysisType} onValueChange={setAnalysisType}>
                   <SelectTrigger className="mt-2">
                     <SelectValue />
