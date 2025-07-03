@@ -99,8 +99,13 @@ const TTestDashboard = () => {
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
+      {!results ? (
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Statistical Analysis</h1>
+            <p className="text-muted-foreground">Compare groups, analyze changes, and test hypotheses with your data</p>
+          </div>
+          
           <Card>
             <CardContent className="space-y-6 pt-6">
               
@@ -296,96 +301,123 @@ const TTestDashboard = () => {
               </Alert>
             </CardContent>
           </Card>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Analysis Results</h1>
+              <p className="text-muted-foreground mt-2">
+                {results.testUsed} • {(1 - results.alpha) * 100}% confidence level
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setResults(null)}
+            >
+              New analysis
+            </Button>
+          </div>
 
-          {/* Results */}
-          {results && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  Analysis results
-                  <Badge variant={results.isSignificant ? "destructive" : "secondary"}>
-                    {results.isSignificant ? "Statistically Significant" : "Not Significant"}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {analysisType === "one-sample" && (
-                    <>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <span className="font-medium text-blue-900">Sample average:</span>
-                        <div className="text-xl font-mono text-blue-800">{results.sampleMean?.toFixed(2) || results.mean1?.toFixed(2)}</div>
-                      </div>
-                      <div className="p-3 bg-green-50 rounded-lg">
-                        <span className="font-medium text-green-900">Target value:</span>
-                        <div className="text-xl font-mono text-green-800">{targetValue}</div>
-                      </div>
-                    </>
-                  )}
-                  
-                  {analysisType === "two-sample" && results.testType === "anova" && (
-                    <>
-                      {results.groupMeans?.map((mean, index) => (
-                        <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                          <span className="font-medium text-blue-900">{selectedVariables[index]?.replace(/_/g, ' ')} average:</span>
-                          <div className="text-xl font-mono text-blue-800">{mean.toFixed(2)}</div>
-                        </div>
-                      ))}
-                      <div className="p-3 bg-green-50 rounded-lg">
-                        <span className="font-medium text-green-900">Effect size (η²):</span>
-                        <div className="text-xl font-mono text-green-800">{results.etaSquared?.toFixed(3)}</div>
-                      </div>
-                    </>
-                  )}
-
-                  {analysisType === "two-sample" && results.testType !== "anova" && (
-                    <>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <span className="font-medium text-blue-900">{selectedVariables[0]?.replace(/_/g, ' ')} average:</span>
-                        <div className="text-xl font-mono text-blue-800">{results.mean1?.toFixed(2)}</div>
-                      </div>
-                      <div className="p-3 bg-green-50 rounded-lg">
-                        <span className="font-medium text-green-900">{selectedVariables[1]?.replace(/_/g, ' ')} average:</span>
-                        <div className="text-xl font-mono text-green-800">{results.mean2?.toFixed(2)}</div>
-                      </div>
-                    </>
-                  )}
-
-                  {analysisType === "paired" && (
-                    <>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <span className="font-medium text-blue-900">Average change:</span>
-                        <div className="text-xl font-mono text-blue-800">
-                          {results.meanDifference > 0 ? '+' : ''}{results.meanDifference?.toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="p-3 bg-green-50 rounded-lg">
-                        <span className="font-medium text-green-900">Effect size:</span>
-                        <div className="text-xl font-mono text-green-800">{results.effectSize?.toFixed(2)}</div>
-                      </div>
-                    </>
-                  )}
-                </div>
+          {/* Key Finding Banner */}
+          <Card className="border-l-4 border-l-primary">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Badge variant={results.isSignificant ? "destructive" : "secondary"} className="text-sm">
+                  {results.isSignificant ? "Statistically Significant" : "Not Significant"}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  p-value: {results.pValue < 0.001 ? "<0.001" : results.pValue.toFixed(3)}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {analysisType === "one-sample" && (
+                  <>
+                    <div className="text-center p-4 bg-primary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-primary">{results.sampleMean?.toFixed(2) || results.mean1?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">Sample average</div>
+                    </div>
+                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-secondary-foreground">{targetValue}</div>
+                      <div className="text-sm text-muted-foreground">Target value</div>
+                    </div>
+                    <div className="text-center p-4 bg-accent/5 rounded-lg">
+                      <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">Effect size</div>
+                    </div>
+                  </>
+                )}
                 
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="text-sm leading-relaxed whitespace-pre-line">
-                    {results.interpretation}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                {analysisType === "two-sample" && results.testType === "anova" && (
+                  <>
+                    <div className="text-center p-4 bg-primary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
+                      <div className="text-sm text-muted-foreground">Groups compared</div>
+                    </div>
+                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-secondary-foreground">{results.fStatistic?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">F-statistic</div>
+                    </div>
+                    <div className="text-center p-4 bg-accent/5 rounded-lg">
+                      <div className="text-2xl font-bold text-accent-foreground">{results.etaSquared?.toFixed(3)}</div>
+                      <div className="text-sm text-muted-foreground">Effect size (η²)</div>
+                    </div>
+                  </>
+                )}
 
-        <div>
-          {results && (
-            <TTestVisualization 
-              results={results}
-              testType={results.testType === "anova" ? "anova" : analysisType}
-            />
-          )}
+                {analysisType === "two-sample" && results.testType !== "anova" && (
+                  <>
+                    <div className="text-center p-4 bg-primary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">{selectedVariables[0]?.replace(/_/g, ' ')}</div>
+                    </div>
+                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">{selectedVariables[1]?.replace(/_/g, ' ')}</div>
+                    </div>
+                    <div className="text-center p-4 bg-accent/5 rounded-lg">
+                      <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">Effect size</div>
+                    </div>
+                  </>
+                )}
+
+                {analysisType === "paired" && (
+                  <>
+                    <div className="text-center p-4 bg-primary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-primary">
+                        {results.meanDifference > 0 ? '+' : ''}{results.meanDifference?.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Average change</div>
+                    </div>
+                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
+                      <div className="text-2xl font-bold text-secondary-foreground">{results.tStatistic?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">t-statistic</div>
+                    </div>
+                    <div className="text-center p-4 bg-accent/5 rounded-lg">
+                      <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
+                      <div className="text-sm text-muted-foreground">Effect size</div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="text-sm leading-relaxed whitespace-pre-line">
+                  {results.interpretation}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Visualization */}
+          <TTestVisualization 
+            results={results}
+            testType={results.testType === "anova" ? "anova" : analysisType}
+          />
         </div>
-      </div>
+      )}
     </div>
   );
 };
