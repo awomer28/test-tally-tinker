@@ -5,7 +5,8 @@ export function calculateOneSampleTTest(
   data: number[], 
   populationMean: number, 
   alpha: number, 
-  alternative: string
+  alternative: string,
+  statistic: string = "mean"
 ) {
   const n = data.length;
   const sampleMean = data.reduce((sum, x) => sum + x, 0) / n;
@@ -57,7 +58,9 @@ export function calculateTwoSampleTTest(
   data2: number[], 
   alpha: number, 
   alternative: string, 
-  equalVariances: boolean = true
+  equalVariances: boolean = true,
+  statistic: string = "mean",
+  groupNames: string[] = []
 ) {
   const n1 = data1.length;
   const n2 = data2.length;
@@ -99,7 +102,7 @@ export function calculateTwoSampleTTest(
     alpha, 
     alternative,
     "two-sample",
-    { mean1, mean2, effectSize }
+    { mean1, mean2, effectSize, groupNames }
   );
   
   return {
@@ -123,7 +126,8 @@ export function calculatePairedTTest(
   before: number[], 
   after: number[], 
   alpha: number, 
-  alternative: string
+  alternative: string,
+  statistic: string = "mean"
 ) {
   if (before.length !== after.length) {
     throw new Error("Before and after data must have the same length");
@@ -252,7 +256,9 @@ function normalCDF(x: number): number {
 
 export function calculateANOVA(
   groups: number[][], 
-  alpha: number
+  alpha: number,
+  statistic: string = "mean",
+  groupNames: string[] = []
 ) {
   const n = groups.reduce((sum, group) => sum + group.length, 0);
   const k = groups.length;
@@ -296,7 +302,7 @@ export function calculateANOVA(
     isSignificant, 
     pValue, 
     alpha, 
-    { groupMeans, etaSquared, overallMean }
+    { groupMeans, etaSquared, overallMean, groupNames }
   );
   
   return {
@@ -336,7 +342,7 @@ function generateANOVAInterpretation(
   alpha: number, 
   stats: any
 ): string {
-  const { groupMeans, etaSquared, overallMean } = stats;
+  const { groupMeans, etaSquared, overallMean, groupNames = [] } = stats;
   
   // Plain English summary
   const effectDesc = etaSquared < 0.01 ? "very small" : 
@@ -347,13 +353,19 @@ function generateANOVAInterpretation(
   
   let plainEnglish = "";
   if (isSignificant) {
-    plainEnglish = `There are meaningful differences between the groups. The group averages range from ${Math.min(...groupMeans).toFixed(2)} to ${Math.max(...groupMeans).toFixed(2)} (a difference of ${meanRange.toFixed(2)}), which is statistically significant. This represents a ${effectDesc} effect size, meaning ${etaSquared < 0.06 ? 'the group differences explain a small portion' : etaSquared < 0.14 ? 'the group differences explain a moderate portion' : 'the group differences explain a large portion'} of the variation in the data.`;
+    const groupSummary = groupNames.length > 0 
+      ? groupNames.map((name, i) => `${name.replace(/_/g, ' ')}: ${groupMeans[i].toFixed(2)}`).join(', ')
+      : `${Math.min(...groupMeans).toFixed(2)} to ${Math.max(...groupMeans).toFixed(2)}`;
+    plainEnglish = `There are meaningful differences between the groups (${groupSummary}). The range of ${meanRange.toFixed(2)} is statistically significant with a ${effectDesc} effect size, meaning ${etaSquared < 0.06 ? 'the group differences explain a small portion' : etaSquared < 0.14 ? 'the group differences explain a moderate portion' : 'the group differences explain a large portion'} of the variation in the data.`;
   } else {
-    plainEnglish = `The groups show similar averages overall. While the group means range from ${Math.min(...groupMeans).toFixed(2)} to ${Math.max(...groupMeans).toFixed(2)}, these differences are not statistically significant and could reasonably be due to random variation rather than true group differences.`;
+    const groupSummary = groupNames.length > 0 
+      ? groupNames.map((name, i) => `${name.replace(/_/g, ' ')}: ${groupMeans[i].toFixed(2)}`).join(', ')
+      : `${Math.min(...groupMeans).toFixed(2)} to ${Math.max(...groupMeans).toFixed(2)}`;
+    plainEnglish = `The groups show similar averages (${groupSummary}). These differences are not statistically significant and could reasonably be due to random variation rather than true group differences.`;
   }
   
-  // Statistical recap
-  const statisticalRecap = `Statistical results: F-statistic = ${stats.fStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha}. Effect size (η² = ${etaSquared.toFixed(3)}) indicates a ${effectDesc} effect.`;
+  // Statistical recap with test type
+  const statisticalRecap = `Test used: One-way ANOVA | F-statistic = ${stats.fStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha} | Effect size (η² = ${etaSquared.toFixed(3)}) indicates a ${effectDesc} effect.`;
   
   return `${plainEnglish}\n\n${statisticalRecap}`;
 }
@@ -378,24 +390,27 @@ function generateInterpretation(
       plainEnglish = `The sample average (${sampleMean.toFixed(2)}) is not significantly different from the target value (${populationMean}). The observed difference of ${difference.toFixed(2)} could reasonably be due to random variation.`;
     }
     
-    const statisticalRecap = `Statistical results: t-statistic = ${stats.tStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha}.`;
+    const statisticalRecap = `Test used: One-sample t-test | t-statistic = ${stats.tStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha}`;
     return `${plainEnglish}\n\n${statisticalRecap}`;
     
   } else if (testType === "two-sample") {
-    const { mean1, mean2, effectSize } = stats;
+    const { mean1, mean2, effectSize, groupNames = [] } = stats;
     const difference = Math.abs(mean1 - mean2);
     const effectDesc = Math.abs(effectSize) < 0.2 ? "small" : 
                       Math.abs(effectSize) < 0.5 ? "medium" : "large";
     
+    const group1Name = groupNames[0]?.replace(/_/g, ' ') || "Group 1";
+    const group2Name = groupNames[1]?.replace(/_/g, ' ') || "Group 2";
+    
     let plainEnglish = "";
     if (isSignificant) {
       const direction = mean1 > mean2 ? "higher" : "lower";
-      plainEnglish = `Group 1 has a significantly ${direction} average (${mean1.toFixed(2)}) compared to Group 2 (${mean2.toFixed(2)}), with a difference of ${difference.toFixed(2)}. This represents a ${effectDesc} effect size, indicating ${Math.abs(effectSize) < 0.2 ? 'a subtle but statistically detectable difference' : Math.abs(effectSize) < 0.5 ? 'a moderate practical difference' : 'a substantial practical difference'} between the groups.`;
+      plainEnglish = `${group1Name} has a significantly ${direction} average (${mean1.toFixed(2)}) compared to ${group2Name} (${mean2.toFixed(2)}), with a difference of ${difference.toFixed(2)}. This represents a ${effectDesc} effect size, indicating ${Math.abs(effectSize) < 0.2 ? 'a subtle but statistically detectable difference' : Math.abs(effectSize) < 0.5 ? 'a moderate practical difference' : 'a substantial practical difference'} between the groups.`;
     } else {
-      plainEnglish = `The groups show similar averages (Group 1: ${mean1.toFixed(2)}, Group 2: ${mean2.toFixed(2)}). The difference of ${difference.toFixed(2)} is not statistically significant and could be due to random variation.`;
+      plainEnglish = `The groups show similar averages (${group1Name}: ${mean1.toFixed(2)}, ${group2Name}: ${mean2.toFixed(2)}). The difference of ${difference.toFixed(2)} is not statistically significant and could be due to random variation.`;
     }
     
-    const statisticalRecap = `Statistical results: t-statistic = ${stats.tStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha}. Effect size (Cohen's d = ${effectSize.toFixed(3)}) indicates a ${effectDesc} effect.`;
+    const statisticalRecap = `Test used: Independent samples t-test | t-statistic = ${stats.tStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha} | Effect size (Cohen's d = ${effectSize.toFixed(3)}) indicates a ${effectDesc} effect.`;
     return `${plainEnglish}\n\n${statisticalRecap}`;
     
   } else if (testType === "paired") {
@@ -411,7 +426,7 @@ function generateInterpretation(
       plainEnglish = `The average change from before to after (${meanDifference.toFixed(2)}) is not statistically significant. Any observed differences could reasonably be attributed to normal variation rather than a true systematic change.`;
     }
     
-    const statisticalRecap = `Statistical results: t-statistic = ${stats.tStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha}. Effect size (Cohen's d = ${effectSize.toFixed(3)}) indicates a ${effectDesc} effect.`;
+    const statisticalRecap = `Test used: Paired samples t-test | t-statistic = ${stats.tStatistic?.toFixed(3)}, p-value = ${pValue.toFixed(4)}, α = ${alpha} | Effect size (Cohen's d = ${effectSize.toFixed(3)}) indicates a ${effectDesc} effect.`;
     return `${plainEnglish}\n\n${statisticalRecap}`;
   }
   

@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResponsiveContainer, XAxis, YAxis, Area, AreaChart, ReferenceLine, Tooltip } from "recharts";
+import { ResponsiveContainer, XAxis, YAxis, Area, AreaChart, ReferenceLine, Tooltip, BarChart, Bar } from "recharts";
 import { useMemo } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TTestVisualizationProps {
   results: any;
@@ -48,11 +49,38 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
     return points;
   }, [results]);
 
+  const groupComparisonData = useMemo(() => {
+    if (testType === "anova" && results.groupMeans && results.groupNames) {
+      return results.groupNames.map((name, index) => ({
+        group: name.replace(/_/g, ' '),
+        value: results.groupMeans[index],
+        isSignificant: results.isSignificant
+      }));
+    } else if (testType === "two-sample" && results.mean1 !== undefined && results.mean2 !== undefined) {
+      return [
+        { group: results.groupNames?.[0]?.replace(/_/g, ' ') || "Group 1", value: results.mean1, isSignificant: results.isSignificant },
+        { group: results.groupNames?.[1]?.replace(/_/g, ' ') || "Group 2", value: results.mean2, isSignificant: results.isSignificant }
+      ];
+    }
+    return [];
+  }, [results, testType]);
+
   return (
     <div className="space-y-6">
-      <Card>
+      <Tabs defaultValue="distribution" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="distribution">Statistical Distribution</TabsTrigger>
+          <TabsTrigger value="comparison">Group Comparison</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="distribution">
+          <Card>
         <CardHeader>
           <CardTitle className="text-lg">T-Distribution & Critical Region</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            This chart shows the theoretical distribution and where your test statistic falls. 
+            The colored areas represent critical regions where results would be considered statistically significant.
+          </p>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -132,6 +160,44 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+        
+        <TabsContent value="comparison">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Group Comparison</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This chart compares the average values across your selected groups. 
+                The height of each bar represents the group's average value.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={groupComparisonData}>
+                  <XAxis 
+                    dataKey="group" 
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis />
+                  <Bar 
+                    dataKey="value" 
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Tooltip 
+                    formatter={(value: any) => [value.toFixed(2), "Average"]}
+                    labelStyle={{ color: "#374151" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {results.confidenceInterval && (
         <Card>
@@ -139,6 +205,10 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
             <CardTitle className="text-lg">
               {(1 - results.alpha) * 100}% Confidence Interval
             </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              This interval shows the range where the true population value likely falls. 
+              We're {(1 - results.alpha) * 100}% confident the true value is within this range.
+            </p>
           </CardHeader>
           <CardContent>
             <div className="mb-4">

@@ -17,6 +17,7 @@ const TTestDashboard = () => {
   const [targetValue, setTargetValue] = useState("");
   const [alpha, setAlpha] = useState("0.05");
   const [alternative, setAlternative] = useState("two-sided");
+  const [statistic, setStatistic] = useState("mean");
   const [results, setResults] = useState(null);
 
   // Mock dataset variables - in real app this would come from uploaded data
@@ -60,21 +61,27 @@ const TTestDashboard = () => {
       
       if (analysisType === "one-sample" && selectedVariables[0] && targetValue) {
         const data = generateMockData(selectedVariables[0]);
-        testResults = calculateOneSampleTTest(data, parseFloat(targetValue), parseFloat(alpha), alternative);
+        testResults = calculateOneSampleTTest(data, parseFloat(targetValue), parseFloat(alpha), alternative, statistic);
       } else if (analysisType === "paired" && selectedVariables[0] && selectedVariables[1]) {
         const data1 = generateMockData(selectedVariables[0]);
         const data2 = generateMockData(selectedVariables[1]);
-        testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative);
+        testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative, statistic);
       } else if (analysisType === "two-sample" && selectedVariables.filter(v => v).length >= 2) {
         const groups = selectedVariables.filter(v => v).map(variable => generateMockData(variable));
+        const groupNames = selectedVariables.filter(v => v);
         
         if (groups.length === 2) {
-          testResults = calculateTwoSampleTTest(groups[0], groups[1], parseFloat(alpha), alternative, true);
+          testResults = calculateTwoSampleTTest(groups[0], groups[1], parseFloat(alpha), alternative, true, statistic, groupNames);
         } else {
           // ANOVA for multiple groups
-          testResults = calculateANOVA(groups, parseFloat(alpha));
+          testResults = calculateANOVA(groups, parseFloat(alpha), statistic, groupNames);
           testResults.testType = "anova";
         }
+      }
+      
+      // Add group names for interpretation
+      if (testResults) {
+        testResults.groupNames = selectedVariables.filter(v => v);
       }
       
       setResults(testResults);
@@ -253,9 +260,23 @@ const TTestDashboard = () => {
                     </Select>
                   </div>
                 ) : null}
+                
+                <div>
+                  <Label className="text-base font-medium">Statistic to compare</Label>
+                  <Select value={statistic} onValueChange={setStatistic}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mean">Average (mean)</SelectItem>
+                      <SelectItem value="median">Median</SelectItem>
+                      <SelectItem value="proportion">Proportion (for categorical data)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleRunAnalysis}
                 disabled={!isReadyToAnalyze()}
                 className="w-full"
