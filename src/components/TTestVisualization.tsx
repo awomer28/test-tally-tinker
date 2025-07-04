@@ -197,6 +197,8 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </TabsContent>
+        
         <TabsContent value="distributions">
           <Card>
             <CardHeader>
