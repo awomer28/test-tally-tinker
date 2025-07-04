@@ -12,7 +12,8 @@ import TTestVisualization from "./TTestVisualization";
 import { calculateOneSampleTTest, calculateTwoSampleTTest, calculatePairedTTest, calculateANOVA } from "@/utils/tTestCalculations";
 
 const TTestDashboard = () => {
-  const [comparisonType, setComparisonType] = useState("compare-averages-groups");
+  const [comparisonType, setComparisonType] = useState("compare-groups");
+  const [statisticType, setStatisticType] = useState("mean");
   const [selectedVariables, setSelectedVariables] = useState(["", ""]);
   const [targetValue, setTargetValue] = useState("");
   const [alpha, setAlpha] = useState("0.05");
@@ -57,7 +58,7 @@ const TTestDashboard = () => {
 
     try {
       let testResults;
-      const statistic = getStatisticFromComparisonType(comparisonType);
+      const statistic = comparisonType === "compare-groups" ? statisticType : "mean";
       
       if (comparisonType === "compare-to-target" && selectedVariables[0] && targetValue) {
         const data = generateMockData(selectedVariables[0]);
@@ -66,7 +67,7 @@ const TTestDashboard = () => {
         const data1 = generateMockData(selectedVariables[0]);
         const data2 = generateMockData(selectedVariables[1]);
         testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative, statistic);
-      } else if (comparisonType.includes("groups") && selectedVariables.filter(v => v).length >= 2) {
+      } else if (comparisonType === "compare-groups" && selectedVariables.filter(v => v).length >= 2) {
         const groups = selectedVariables.filter(v => v).map(variable => generateMockData(variable));
         const groupNames = selectedVariables.filter(v => v);
         
@@ -83,6 +84,7 @@ const TTestDashboard = () => {
       if (testResults) {
         testResults.groupNames = selectedVariables.filter(v => v);
         testResults.comparisonType = comparisonType;
+        testResults.statisticType = statisticType;
       }
       
       setResults(testResults);
@@ -91,18 +93,10 @@ const TTestDashboard = () => {
     }
   };
 
-  const getStatisticFromComparisonType = (type: string) => {
-    if (type === "compare-averages-groups") return "mean";
-    if (type === "compare-medians-groups") return "median";
-    if (type === "compare-variances-groups") return "variance";
-    if (type === "compare-rates-groups") return "proportion";
-    return "mean"; // default
-  };
-
   const isReadyToAnalyze = () => {
     if (comparisonType === "compare-to-target") return selectedVariables[0] && targetValue;
     if (comparisonType === "compare-before-after") return selectedVariables[0] && selectedVariables[1];
-    if (comparisonType.includes("groups")) return selectedVariables.filter(v => v).length >= 2;
+    if (comparisonType === "compare-groups") return selectedVariables.filter(v => v).length >= 2;
     return false;
   };
 
@@ -125,46 +119,46 @@ const TTestDashboard = () => {
                   <SelectTrigger className="mt-2">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compare-averages-groups">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Compare averages between groups
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="compare-variances-groups">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Compare variances between groups
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="compare-medians-groups">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Compare medians between groups
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="compare-rates-groups">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Compare rates/percentages between groups
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="compare-different-variables">
-                      <div className="flex items-center gap-2">
-                        <Upload className="w-4 h-4" />
-                        Compare different variables
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="compare-before-after">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-4 h-4" />
-                        Compare before and after
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
+                   <SelectContent>
+                     <SelectItem value="compare-groups">
+                       <div className="flex items-center gap-2">
+                         <Users className="w-4 h-4" />
+                         Compare between groups
+                       </div>
+                     </SelectItem>
+                     <SelectItem value="compare-different-variables">
+                       <div className="flex items-center gap-2">
+                         <Upload className="w-4 h-4" />
+                         Compare different variables
+                       </div>
+                     </SelectItem>
+                     <SelectItem value="compare-before-after">
+                       <div className="flex items-center gap-2">
+                         <Activity className="w-4 h-4" />
+                         Compare before and after
+                       </div>
+                     </SelectItem>
+                   </SelectContent>
                 </Select>
-              </div>
+               </div>
+
+               {/* Statistic Type Selection - only show for group comparisons */}
+               {comparisonType === "compare-groups" && (
+                 <div>
+                   <Label className="text-base font-medium">What to compare</Label>
+                   <Select value={statisticType} onValueChange={setStatisticType}>
+                     <SelectTrigger className="mt-2">
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="mean">Averages/means</SelectItem>
+                       <SelectItem value="median">Medians</SelectItem>
+                       <SelectItem value="variance">Variances</SelectItem>
+                       <SelectItem value="proportion">Rates/percentages</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
+               )}
 
               {/* Variable Selection */}
               <div className="space-y-4">
@@ -208,29 +202,29 @@ const TTestDashboard = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        {comparisonType.includes("groups") && selectedVariables.length > 2 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeVariable(index)}
-                            className="mt-6"
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    
-                    {comparisonType.includes("groups") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={addVariable}
-                        className="w-full"
-                      >
-                        + Add group
-                      </Button>
-                    )}
+                         {comparisonType === "compare-groups" && selectedVariables.length > 2 && (
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => removeVariable(index)}
+                             className="mt-6"
+                           >
+                             Remove
+                           </Button>
+                         )}
+                       </div>
+                     ))}
+                     
+                     {comparisonType === "compare-groups" && (
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={addVariable}
+                         className="w-full"
+                       >
+                         + Add group
+                       </Button>
+                     )}
                   </div>
                 )}
 
@@ -265,7 +259,7 @@ const TTestDashboard = () => {
                   </Select>
                 </div>
 
-                {!comparisonType.includes("groups") || selectedVariables.filter(v => v).length === 2 ? (
+                {comparisonType !== "compare-groups" || selectedVariables.filter(v => v).length === 2 ? (
                   <div>
                     <Label className="text-base font-medium">Research question</Label>
                     <Select value={alternative} onValueChange={setAlternative}>
@@ -306,12 +300,12 @@ const TTestDashboard = () => {
               {/* Info Alert */}
               <Alert>
                 <Info className="h-4 w-4" />
-                <AlertDescription>
-                  {comparisonType === "compare-to-target" && "Compare your variable's average to a specific target or benchmark value."}
-                  {comparisonType === "compare-before-after" && "Analyze changes in the same subjects measured at two different times."}
-                  {comparisonType.includes("groups") && selectedVariables.filter(v => v).length > 2 ? "Compare values across multiple groups using ANOVA." : "Compare values between two different groups or conditions."}
-                  {comparisonType === "compare-different-variables" && "Compare different variables or metrics from your dataset."}
-                </AlertDescription>
+                 <AlertDescription>
+                   {comparisonType === "compare-to-target" && "Compare your variable's average to a specific target or benchmark value."}
+                   {comparisonType === "compare-before-after" && "Analyze changes in the same subjects measured at two different times."}
+                   {comparisonType === "compare-groups" && selectedVariables.filter(v => v).length > 2 ? "Compare values across multiple groups using ANOVA." : "Compare values between two different groups or conditions."}
+                   {comparisonType === "compare-different-variables" && "Compare different variables or metrics from your dataset."}
+                 </AlertDescription>
               </Alert>
             </CardContent>
           </Card>
@@ -363,24 +357,24 @@ const TTestDashboard = () => {
                   </>
                 )}
                 
-                {comparisonType.includes("groups") && results.testType === "anova" && (
-                  <>
-                    <div className="text-center p-4 bg-primary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
-                      <div className="text-sm text-muted-foreground">Groups compared</div>
-                    </div>
-                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-secondary-foreground">{results.fStatistic?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">F-statistic</div>
-                    </div>
-                    <div className="text-center p-4 bg-accent/5 rounded-lg">
-                      <div className="text-2xl font-bold text-accent-foreground">{results.etaSquared?.toFixed(3)}</div>
-                      <div className="text-sm text-muted-foreground">Effect size (η²)</div>
-                    </div>
-                  </>
-                )}
+                 {comparisonType === "compare-groups" && results.testType === "anova" && (
+                   <>
+                     <div className="text-center p-4 bg-primary/5 rounded-lg">
+                       <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
+                       <div className="text-sm text-muted-foreground">Groups compared</div>
+                     </div>
+                     <div className="text-center p-4 bg-secondary/5 rounded-lg">
+                       <div className="text-2xl font-bold text-secondary-foreground">{results.fStatistic?.toFixed(2)}</div>
+                       <div className="text-sm text-muted-foreground">F-statistic</div>
+                     </div>
+                     <div className="text-center p-4 bg-accent/5 rounded-lg">
+                       <div className="text-2xl font-bold text-accent-foreground">{results.etaSquared?.toFixed(3)}</div>
+                       <div className="text-sm text-muted-foreground">Effect size (η²)</div>
+                     </div>
+                   </>
+                 )}
 
-                {comparisonType.includes("groups") && results.testType !== "anova" && (
+                 {comparisonType === "compare-groups" && results.testType !== "anova" && (
                   <>
                     <div className="text-center p-4 bg-primary/5 rounded-lg">
                       <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
