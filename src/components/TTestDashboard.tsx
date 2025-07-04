@@ -12,12 +12,11 @@ import TTestVisualization from "./TTestVisualization";
 import { calculateOneSampleTTest, calculateTwoSampleTTest, calculatePairedTTest, calculateANOVA } from "@/utils/tTestCalculations";
 
 const TTestDashboard = () => {
-  const [analysisType, setAnalysisType] = useState("two-sample");
+  const [comparisonType, setComparisonType] = useState("compare-averages-groups");
   const [selectedVariables, setSelectedVariables] = useState(["", ""]);
   const [targetValue, setTargetValue] = useState("");
   const [alpha, setAlpha] = useState("0.05");
   const [alternative, setAlternative] = useState("two-sided");
-  const [statistic, setStatistic] = useState("mean");
   const [results, setResults] = useState(null);
 
   // Mock dataset variables - in real app this would come from uploaded data
@@ -58,15 +57,16 @@ const TTestDashboard = () => {
 
     try {
       let testResults;
+      const statistic = getStatisticFromComparisonType(comparisonType);
       
-      if (analysisType === "one-sample" && selectedVariables[0] && targetValue) {
+      if (comparisonType === "compare-to-target" && selectedVariables[0] && targetValue) {
         const data = generateMockData(selectedVariables[0]);
         testResults = calculateOneSampleTTest(data, parseFloat(targetValue), parseFloat(alpha), alternative, statistic);
-      } else if (analysisType === "paired" && selectedVariables[0] && selectedVariables[1]) {
+      } else if (comparisonType === "compare-before-after" && selectedVariables[0] && selectedVariables[1]) {
         const data1 = generateMockData(selectedVariables[0]);
         const data2 = generateMockData(selectedVariables[1]);
         testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative, statistic);
-      } else if (analysisType === "two-sample" && selectedVariables.filter(v => v).length >= 2) {
+      } else if (comparisonType.includes("groups") && selectedVariables.filter(v => v).length >= 2) {
         const groups = selectedVariables.filter(v => v).map(variable => generateMockData(variable));
         const groupNames = selectedVariables.filter(v => v);
         
@@ -82,6 +82,7 @@ const TTestDashboard = () => {
       // Add group names for interpretation
       if (testResults) {
         testResults.groupNames = selectedVariables.filter(v => v);
+        testResults.comparisonType = comparisonType;
       }
       
       setResults(testResults);
@@ -90,10 +91,18 @@ const TTestDashboard = () => {
     }
   };
 
+  const getStatisticFromComparisonType = (type: string) => {
+    if (type === "compare-averages-groups") return "mean";
+    if (type === "compare-medians-groups") return "median";
+    if (type === "compare-variances-groups") return "variance";
+    if (type === "compare-rates-groups") return "proportion";
+    return "mean"; // default
+  };
+
   const isReadyToAnalyze = () => {
-    if (analysisType === "one-sample") return selectedVariables[0] && targetValue;
-    if (analysisType === "paired") return selectedVariables[0] && selectedVariables[1];
-    if (analysisType === "two-sample") return selectedVariables.filter(v => v).length >= 2;
+    if (comparisonType === "compare-to-target") return selectedVariables[0] && targetValue;
+    if (comparisonType === "compare-before-after") return selectedVariables[0] && selectedVariables[1];
+    if (comparisonType.includes("groups")) return selectedVariables.filter(v => v).length >= 2;
     return false;
   };
 
@@ -109,30 +118,48 @@ const TTestDashboard = () => {
           <Card>
             <CardContent className="space-y-6 pt-6">
               
-              {/* Analysis Type Selection */}
+              {/* Comparison Type Selection */}
               <div>
                 <Label className="text-base font-medium">Type of comparison</Label>
-                <Select value={analysisType} onValueChange={setAnalysisType}>
+                <Select value={comparisonType} onValueChange={setComparisonType}>
                   <SelectTrigger className="mt-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="two-sample">
+                    <SelectItem value="compare-averages-groups">
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4" />
-                        Compare two or more groups
+                        Compare averages between groups
                       </div>
                     </SelectItem>
-                    <SelectItem value="one-sample">
+                    <SelectItem value="compare-variances-groups">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Compare variances between groups
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="compare-medians-groups">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Compare medians between groups
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="compare-rates-groups">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Compare rates/percentages between groups
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="compare-different-variables">
                       <div className="flex items-center gap-2">
                         <Upload className="w-4 h-4" />
-                        Compare to target value
+                        Compare different variables
                       </div>
                     </SelectItem>
-                    <SelectItem value="paired">
+                    <SelectItem value="compare-before-after">
                       <div className="flex items-center gap-2">
                         <Activity className="w-4 h-4" />
-                        Before & after analysis
+                        Compare before and after
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -141,7 +168,7 @@ const TTestDashboard = () => {
 
               {/* Variable Selection */}
               <div className="space-y-4">
-                {analysisType === "one-sample" ? (
+                {comparisonType === "compare-to-target" ? (
                   <div>
                     <Label className="text-base font-medium">Select variable</Label>
                     <Select value={selectedVariables[0]} onValueChange={(value) => updateVariable(0, value)}>
@@ -163,7 +190,7 @@ const TTestDashboard = () => {
                       <div key={index} className="flex items-center gap-2">
                         <div className="flex-1">
                           <Label className="text-base font-medium">
-                            {analysisType === "paired" ? 
+                            {comparisonType === "compare-before-after" ? 
                               (index === 0 ? "Before/baseline variable" : "After/follow-up variable") :
                               `${index === 0 ? "First" : index === 1 ? "Second" : `Group ${index + 1}`} group variable`
                             }
@@ -181,7 +208,7 @@ const TTestDashboard = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        {analysisType === "two-sample" && selectedVariables.length > 2 && (
+                        {comparisonType.includes("groups") && selectedVariables.length > 2 && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -194,7 +221,7 @@ const TTestDashboard = () => {
                       </div>
                     ))}
                     
-                    {analysisType === "two-sample" && (
+                    {comparisonType.includes("groups") && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -207,7 +234,7 @@ const TTestDashboard = () => {
                   </div>
                 )}
 
-                {analysisType === "one-sample" && (
+                {comparisonType === "compare-to-target" && (
                   <div>
                     <Label className="text-base font-medium">Target value</Label>
                     <input
@@ -238,7 +265,7 @@ const TTestDashboard = () => {
                   </Select>
                 </div>
 
-                {analysisType !== "two-sample" || selectedVariables.filter(v => v).length === 2 ? (
+                {!comparisonType.includes("groups") || selectedVariables.filter(v => v).length === 2 ? (
                   <div>
                     <Label className="text-base font-medium">Research question</Label>
                     <Select value={alternative} onValueChange={setAlternative}>
@@ -247,38 +274,24 @@ const TTestDashboard = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="two-sided">
-                          {analysisType === "one-sample" ? "Is there any difference from target?" :
-                           analysisType === "paired" ? "Is there any change?" :
+                          {comparisonType === "compare-to-target" ? "Is there any difference from target?" :
+                           comparisonType === "compare-before-after" ? "Is there any change?" :
                            "Are the groups different?"}
                         </SelectItem>
                         <SelectItem value="greater">
-                          {analysisType === "one-sample" ? "Is the variable higher than target?" :
-                           analysisType === "paired" ? "Did values increase?" :
+                          {comparisonType === "compare-to-target" ? "Is the variable higher than target?" :
+                           comparisonType === "compare-before-after" ? "Did values increase?" :
                            "Is first group higher?"}
                         </SelectItem>
                         <SelectItem value="less">
-                          {analysisType === "one-sample" ? "Is the variable lower than target?" :
-                           analysisType === "paired" ? "Did values decrease?" :
+                          {comparisonType === "compare-to-target" ? "Is the variable lower than target?" :
+                           comparisonType === "compare-before-after" ? "Did values decrease?" :
                            "Is first group lower?"}
                         </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 ) : null}
-                
-                <div>
-                  <Label className="text-base font-medium">Statistic to compare</Label>
-                  <Select value={statistic} onValueChange={setStatistic}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mean">Average (mean)</SelectItem>
-                      <SelectItem value="median">Median</SelectItem>
-                      <SelectItem value="proportion">Proportion (for categorical data)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <Button
@@ -294,9 +307,10 @@ const TTestDashboard = () => {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  {analysisType === "one-sample" && "Compare your variable's average to a specific target or benchmark value."}
-                  {analysisType === "paired" && "Analyze changes in the same subjects measured at two different times."}
-                  {analysisType === "two-sample" && selectedVariables.filter(v => v).length > 2 ? "Compare averages across multiple groups using ANOVA." : "Compare averages between two different groups or conditions."}
+                  {comparisonType === "compare-to-target" && "Compare your variable's average to a specific target or benchmark value."}
+                  {comparisonType === "compare-before-after" && "Analyze changes in the same subjects measured at two different times."}
+                  {comparisonType.includes("groups") && selectedVariables.filter(v => v).length > 2 ? "Compare values across multiple groups using ANOVA." : "Compare values between two different groups or conditions."}
+                  {comparisonType === "compare-different-variables" && "Compare different variables or metrics from your dataset."}
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -315,7 +329,7 @@ const TTestDashboard = () => {
               variant="outline"
               onClick={() => setResults(null)}
             >
-              New analysis
+              ← Back
             </Button>
           </div>
 
@@ -332,7 +346,7 @@ const TTestDashboard = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {analysisType === "one-sample" && (
+                {comparisonType === "compare-to-target" && (
                   <>
                     <div className="text-center p-4 bg-primary/5 rounded-lg">
                       <div className="text-2xl font-bold text-primary">{results.sampleMean?.toFixed(2) || results.mean1?.toFixed(2)}</div>
@@ -349,7 +363,7 @@ const TTestDashboard = () => {
                   </>
                 )}
                 
-                {analysisType === "two-sample" && results.testType === "anova" && (
+                {comparisonType.includes("groups") && results.testType === "anova" && (
                   <>
                     <div className="text-center p-4 bg-primary/5 rounded-lg">
                       <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
@@ -366,7 +380,7 @@ const TTestDashboard = () => {
                   </>
                 )}
 
-                {analysisType === "two-sample" && results.testType !== "anova" && (
+                {comparisonType.includes("groups") && results.testType !== "anova" && (
                   <>
                     <div className="text-center p-4 bg-primary/5 rounded-lg">
                       <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
@@ -383,7 +397,7 @@ const TTestDashboard = () => {
                   </>
                 )}
 
-                {analysisType === "paired" && (
+                {comparisonType === "compare-before-after" && (
                   <>
                     <div className="text-center p-4 bg-primary/5 rounded-lg">
                       <div className="text-2xl font-bold text-primary">
@@ -414,7 +428,9 @@ const TTestDashboard = () => {
           {/* Visualization */}
           <TTestVisualization 
             results={results}
-            testType={results.testType === "anova" ? "anova" : analysisType}
+            testType={results.testType === "anova" ? "anova" : 
+                     comparisonType === "compare-before-after" ? "paired" : 
+                     comparisonType === "compare-to-target" ? "one-sample" : "two-sample"}
           />
         </div>
       )}

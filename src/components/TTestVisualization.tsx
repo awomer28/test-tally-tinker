@@ -68,9 +68,10 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="distribution" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="distribution">Statistical Distribution</TabsTrigger>
           <TabsTrigger value="comparison">Group Comparison</TabsTrigger>
+          <TabsTrigger value="distributions">Group Distributions</TabsTrigger>
         </TabsList>
         
         <TabsContent value="distribution">
@@ -194,6 +195,43 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                   />
                 </BarChart>
               </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        <TabsContent value="distributions">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Distribution Comparison</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This chart shows the distribution of values within each group. 
+                The shape and spread help you understand the variability and pattern of your data.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={groupComparisonData}>
+                  <XAxis 
+                    dataKey="group" 
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis />
+                  <Bar 
+                    dataKey="value" 
+                    fill="#10b981"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Tooltip 
+                    formatter={(value: any) => [value.toFixed(2), "Value"]}
+                    labelStyle={{ color: "#374151" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-4 text-sm text-muted-foreground">
+                <p><strong>What this shows:</strong> The distribution pattern of values in each group. Taller, narrower bars indicate more consistent values, while shorter, wider distributions show more variability.</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
