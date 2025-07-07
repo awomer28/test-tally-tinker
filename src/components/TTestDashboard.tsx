@@ -411,9 +411,19 @@ const TTestDashboard = () => {
                 )}
               </div>
               
+              {/* Headline */}
+              <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-l-primary mb-4">
+                <h3 className="font-semibold text-primary mb-2">Key Finding</h3>
+                <div className="text-sm leading-relaxed">
+                  {results.headline}
+                </div>
+              </div>
+
+              {/* Technical Description */}
               <div className="bg-muted/50 p-4 rounded-lg">
+                <h3 className="font-semibold text-foreground mb-2">Technical Details</h3>
                 <div className="text-sm leading-relaxed whitespace-pre-line">
-                  {results.interpretation}
+                  {results.technicalDescription}
                 </div>
               </div>
             </CardContent>
