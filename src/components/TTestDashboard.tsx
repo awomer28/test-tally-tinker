@@ -16,16 +16,23 @@ const TTestDashboard = () => {
   const [comparisonType, setComparisonType] = useState("compare-groups");
   const [statisticType, setStatisticType] = useState("mean");
   const [selectedVariables, setSelectedVariables] = useState(["", ""]);
+  const [groupingVariable, setGroupingVariable] = useState("");
+  const [outcomeVariable, setOutcomeVariable] = useState("");
   const [targetValue, setTargetValue] = useState("");
   const [alpha, setAlpha] = useState("0.05");
   const [alternative, setAlternative] = useState("two-sided");
   const [results, setResults] = useState(null);
 
   // Mock dataset variables - in real app this would come from uploaded data
-  const availableVariables = [
+  const numericalVariables = [
     "Income", "Age", "Education_Years", "Salary", "Test_Score_Before", 
     "Test_Score_After", "GDP_Per_Capita", "Population", "Temperature", 
     "Rainfall", "Sales_Q1", "Sales_Q2", "Blood_Pressure_Before", "Blood_Pressure_After"
+  ];
+
+  const categoricalVariables = [
+    "Gender", "School_District", "Treatment_Group", "Department", "Region", 
+    "Education_Level", "Job_Category", "Product_Type", "Customer_Segment", "Grade_Level"
   ];
 
   const addVariable = () => {
@@ -57,6 +64,20 @@ const TTestDashboard = () => {
       );
     };
 
+    // Generate mock group data for categorical variables
+    const generateGroupData = (categoricalVar, numericalVar) => {
+      // Mock groups based on categorical variable
+      const groupValues = categoricalVar === "Gender" ? ["Male", "Female"] :
+                         categoricalVar === "School_District" ? ["North", "South", "East"] :
+                         categoricalVar === "Treatment_Group" ? ["Control", "Treatment"] :
+                         ["Group_A", "Group_B"];
+      
+      return groupValues.map(groupName => ({
+        groupName,
+        data: generateMockData(numericalVar)
+      }));
+    };
+
     try {
       let testResults;
       const statistic = comparisonType === "compare-groups" ? statisticType : "mean";
@@ -68,9 +89,10 @@ const TTestDashboard = () => {
         const data1 = generateMockData(selectedVariables[0]);
         const data2 = generateMockData(selectedVariables[1]);
         testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative, statistic);
-      } else if (comparisonType === "compare-groups" && selectedVariables.filter(v => v).length >= 2) {
-        const groups = selectedVariables.filter(v => v).map(variable => generateMockData(variable));
-        const groupNames = selectedVariables.filter(v => v);
+      } else if (comparisonType === "compare-groups" && groupingVariable && outcomeVariable) {
+        const groupData = generateGroupData(groupingVariable, outcomeVariable);
+        const groups = groupData.map(g => g.data);
+        const groupNames = groupData.map(g => g.groupName);
         
         if (groups.length === 2) {
           testResults = calculateTwoSampleTTest(groups[0], groups[1], parseFloat(alpha), alternative, true, statistic, groupNames);
@@ -81,11 +103,17 @@ const TTestDashboard = () => {
         }
       }
       
-      // Add group names for interpretation
+      // Add metadata for interpretation
       if (testResults) {
-        testResults.groupNames = selectedVariables.filter(v => v);
+        testResults.groupNames = comparisonType === "compare-groups" ? 
+          (groupingVariable === "Gender" ? ["Male", "Female"] :
+           groupingVariable === "School_District" ? ["North", "South", "East"] :
+           groupingVariable === "Treatment_Group" ? ["Control", "Treatment"] :
+           ["Group_A", "Group_B"]) : selectedVariables.filter(v => v);
         testResults.comparisonType = comparisonType;
         testResults.statisticType = statisticType;
+        testResults.groupingVariable = groupingVariable;
+        testResults.outcomeVariable = outcomeVariable;
       }
       
       setResults(testResults);
@@ -97,7 +125,7 @@ const TTestDashboard = () => {
   const isReadyToAnalyze = () => {
     if (comparisonType === "compare-to-target") return selectedVariables[0] && targetValue;
     if (comparisonType === "compare-before-after") return selectedVariables[0] && selectedVariables[1];
-    if (comparisonType === "compare-groups") return selectedVariables.filter(v => v).length >= 2;
+    if (comparisonType === "compare-groups") return groupingVariable && outcomeVariable;
     return false;
   };
 
@@ -163,23 +191,56 @@ const TTestDashboard = () => {
 
               {/* Variable Selection */}
               <div className="space-y-4">
-                {comparisonType === "compare-to-target" ? (
-                  <div>
-                    <Label className="text-base font-medium">Select variable</Label>
-                    <Select value={selectedVariables[0]} onValueChange={(value) => updateVariable(0, value)}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Choose a variable from your dataset" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableVariables.map((variable) => (
-                          <SelectItem key={variable} value={variable}>
-                            {variable.replace(/_/g, ' ')}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
+                 {comparisonType === "compare-to-target" ? (
+                   <div>
+                     <Label className="text-base font-medium">Select variable</Label>
+                     <Select value={selectedVariables[0]} onValueChange={(value) => updateVariable(0, value)}>
+                       <SelectTrigger className="mt-2">
+                         <SelectValue placeholder="Choose a variable from your dataset" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {numericalVariables.map((variable) => (
+                           <SelectItem key={variable} value={variable}>
+                             {variable.replace(/_/g, ' ')}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                 ) : comparisonType === "compare-groups" ? (
+                   <div className="space-y-4">
+                     <div>
+                       <Label className="text-base font-medium">Grouping variable (categorical)</Label>
+                       <Select value={groupingVariable} onValueChange={setGroupingVariable}>
+                         <SelectTrigger className="mt-2">
+                           <SelectValue placeholder="Choose a categorical variable that defines your groups" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {categoricalVariables.map((variable) => (
+                             <SelectItem key={variable} value={variable}>
+                               {variable.replace(/_/g, ' ')}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <div>
+                       <Label className="text-base font-medium">Outcome variable (numerical)</Label>
+                       <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
+                         <SelectTrigger className="mt-2">
+                           <SelectValue placeholder="Choose a numerical variable to compare across groups" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {numericalVariables.map((variable) => (
+                             <SelectItem key={variable} value={variable}>
+                               {variable.replace(/_/g, ' ')}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   </div>
+                 ) : (
                   <div className="space-y-3">
                     {selectedVariables.map((variable, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -194,13 +255,13 @@ const TTestDashboard = () => {
                             <SelectTrigger className="mt-2">
                               <SelectValue placeholder="Choose a variable" />
                             </SelectTrigger>
-                            <SelectContent>
-                              {availableVariables.filter(v => !selectedVariables.includes(v) || v === variable).map((availableVar) => (
-                                <SelectItem key={availableVar} value={availableVar}>
-                                  {availableVar.replace(/_/g, ' ')}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
+                             <SelectContent>
+                               {numericalVariables.filter(v => !selectedVariables.includes(v) || v === variable).map((availableVar) => (
+                                 <SelectItem key={availableVar} value={availableVar}>
+                                   {availableVar.replace(/_/g, ' ')}
+                                 </SelectItem>
+                               ))}
+                             </SelectContent>
                           </Select>
                         </div>
                          {comparisonType === "compare-groups" && selectedVariables.length > 2 && (
@@ -304,7 +365,7 @@ const TTestDashboard = () => {
                  <AlertDescription>
                    {comparisonType === "compare-to-target" && "Compare your variable's average to a specific target or benchmark value."}
                    {comparisonType === "compare-before-after" && "Analyze changes in the same subjects measured at two different times."}
-                   {comparisonType === "compare-groups" && selectedVariables.filter(v => v).length > 2 ? "Compare values across multiple groups using ANOVA." : "Compare values between two different groups or conditions."}
+                   {comparisonType === "compare-groups" && "Compare a numerical variable across different groups defined by a categorical variable (e.g., compare test scores between male vs female students)."}
                    {comparisonType === "compare-different-variables" && "Compare different variables or metrics from your dataset."}
                  </AlertDescription>
               </Alert>
