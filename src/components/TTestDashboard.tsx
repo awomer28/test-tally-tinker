@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import TTestVisualization from "./TTestVisualization";
 import { calculateOneSampleTTest, calculateTwoSampleTTest, calculatePairedTTest, calculateANOVA } from "@/utils/tTestCalculations";
@@ -339,81 +340,167 @@ const TTestDashboard = () => {
                 </span>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {comparisonType === "compare-to-target" && (
-                  <>
-                    <div className="text-center p-4 bg-primary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{results.sampleMean?.toFixed(2) || results.mean1?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">Sample average</div>
-                    </div>
-                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-secondary-foreground">{targetValue}</div>
-                      <div className="text-sm text-muted-foreground">Target value</div>
-                    </div>
-                    <div className="text-center p-4 bg-accent/5 rounded-lg">
-                      <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">Effect size</div>
-                    </div>
-                  </>
-                )}
-                
-                 {comparisonType === "compare-groups" && results.testType === "anova" && (
-                   <>
-                     <div className="text-center p-4 bg-primary/5 rounded-lg">
-                       <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
-                       <div className="text-sm text-muted-foreground">Groups compared</div>
-                     </div>
-                     <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                       <div className="text-2xl font-bold text-secondary-foreground">{results.fStatistic?.toFixed(2)}</div>
-                       <div className="text-sm text-muted-foreground">F-statistic</div>
-                     </div>
-                     <div className="text-center p-4 bg-accent/5 rounded-lg">
-                       <div className="text-2xl font-bold text-accent-foreground">{results.etaSquared?.toFixed(3)}</div>
-                       <div className="text-sm text-muted-foreground">Effect size (η²)</div>
-                     </div>
-                   </>
-                 )}
+              <TooltipProvider>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {comparisonType === "compare-to-target" && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-primary">{results.sampleMean?.toFixed(2) || results.mean1?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">Sample average</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>The calculated average of your sample data</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-secondary-foreground">{targetValue}</div>
+                            <div className="text-sm text-muted-foreground">Target value</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>The benchmark value you're comparing against</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">Effect size</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Measures the practical significance of the difference (Cohen's d)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+                  
+                   {comparisonType === "compare-groups" && results.testType === "anova" && (
+                     <>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                             <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
+                             <div className="text-sm text-muted-foreground">Groups compared</div>
+                           </div>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Number of different groups in the analysis</p>
+                         </TooltipContent>
+                       </Tooltip>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                             <div className="text-2xl font-bold text-secondary-foreground">{results.fStatistic?.toFixed(2)}</div>
+                             <div className="text-sm text-muted-foreground">F-statistic</div>
+                           </div>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Test statistic comparing variance between groups to variance within groups</p>
+                         </TooltipContent>
+                       </Tooltip>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
+                             <div className="text-2xl font-bold text-accent-foreground">{results.etaSquared?.toFixed(3)}</div>
+                             <div className="text-sm text-muted-foreground">Effect size (η²)</div>
+                           </div>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Proportion of total variance explained by group differences (eta-squared)</p>
+                         </TooltipContent>
+                       </Tooltip>
+                     </>
+                   )}
 
-                 {comparisonType === "compare-groups" && results.testType !== "anova" && (
-                  <>
-                    <div className="text-center p-4 bg-primary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">{selectedVariables[0]?.replace(/_/g, ' ')}</div>
-                    </div>
-                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">{selectedVariables[1]?.replace(/_/g, ' ')}</div>
-                    </div>
-                    <div className="text-center p-4 bg-accent/5 rounded-lg">
-                      <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">Effect size</div>
-                    </div>
-                  </>
-                )}
+                   {comparisonType === "compare-groups" && results.testType !== "anova" && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">{selectedVariables[0]?.replace(/_/g, ' ')}</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Average value for the first group</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">{selectedVariables[1]?.replace(/_/g, ' ')}</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Average value for the second group</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">Effect size</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Measures the practical significance of the difference (Cohen's d)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
 
-                {comparisonType === "compare-before-after" && (
-                  <>
-                    <div className="text-center p-4 bg-primary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-primary">
-                        {results.meanDifference > 0 ? '+' : ''}{results.meanDifference?.toFixed(2)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Average change</div>
-                    </div>
-                    <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-secondary-foreground">{results.tStatistic?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">t-statistic</div>
-                    </div>
-                    <div className="text-center p-4 bg-accent/5 rounded-lg">
-                      <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">Effect size</div>
-                    </div>
-                  </>
-                )}
-              </div>
+                  {comparisonType === "compare-before-after" && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-primary">
+                              {results.meanDifference > 0 ? '+' : ''}{results.meanDifference?.toFixed(2)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">Average change</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Mean difference between before and after measurements</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-secondary-foreground">{results.tStatistic?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">t-statistic</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Test statistic measuring how many standard errors the difference is from zero</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">Effect size</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Measures the practical significance of the change (Cohen's d)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+                </div>
+              </TooltipProvider>
               
               {/* Headline */}
               <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-l-primary mb-4">
-                <h3 className="font-semibold text-primary mb-2">Key Finding</h3>
+                <h3 className="font-semibold text-primary mb-2">Headline</h3>
                 <div className="text-sm leading-relaxed">
                   {results.headline}
                 </div>
