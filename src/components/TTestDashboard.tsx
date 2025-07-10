@@ -311,24 +311,6 @@ const TTestDashboard = () => {
                         ) : (
                         <>
                           <div>
-                            <Label className="text-base font-medium">What do you want to measure?</Label>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Choose the numerical variable you want to compare across groups
-                            </p>
-                            <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
-                              <SelectTrigger className="mt-2">
-                                <SelectValue placeholder="Choose a numerical variable (e.g., Test Score, Income, Age)" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {numericalVariables.map((variable) => (
-                                  <SelectItem key={variable} value={variable}>
-                                    {variable.replace(/_/g, ' ')}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
                             <Label className="text-base font-medium">How are your groups defined?</Label>
                             <p className="text-sm text-muted-foreground mb-2">
                               Choose the categorical variable that divides your data into groups
@@ -339,6 +321,24 @@ const TTestDashboard = () => {
                               </SelectTrigger>
                               <SelectContent>
                                 {categoricalVariables.map((variable) => (
+                                  <SelectItem key={variable} value={variable}>
+                                    {variable.replace(/_/g, ' ')}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-base font-medium">What do you want to measure?</Label>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Choose the numerical variable you want to compare across groups
+                            </p>
+                            <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
+                              <SelectTrigger className="mt-2">
+                                <SelectValue placeholder="Choose a numerical variable (e.g., Test Score, Income, Age)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {numericalVariables.map((variable) => (
                                   <SelectItem key={variable} value={variable}>
                                     {variable.replace(/_/g, ' ')}
                                   </SelectItem>
