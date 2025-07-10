@@ -16,6 +16,11 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
     return <div>No visualization data available</div>;
   }
 
+  // Debug logging
+  console.log("TTestVisualization - testType:", testType);
+  console.log("TTestVisualization - results:", results);
+  console.log("TTestVisualization - results.testType:", results.testType);
+
   const distributionData = useMemo(() => {
     const points = [];
     const { tStatistic, df, criticalValue, alternative } = results;
@@ -266,7 +271,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                     </div>
                   ))}
                   {results.groupNames?.map((group, rowIndex) => (
-                    <React.Fragment key={rowIndex}>
+                    <React.Fragment key={`row-${rowIndex}`}>
                       <div className="text-center font-semibold text-sm p-2">
                         {group.replace(/_/g, ' ')}
                       </div>
