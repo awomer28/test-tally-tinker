@@ -653,21 +653,63 @@ const TTestDashboard = () => {
                 </div>
               </TooltipProvider>
               
+              {/* Headline */}
+              <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-l-primary mb-4">
+                <h3 className="font-semibold text-primary mb-2">Headline</h3>
+                <div className="text-sm leading-relaxed">
+                  {results.headline}
+                </div>
+              </div>
+
               {/* Summary and Technical Details Side by Side */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Summary Section */}
-                <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-l-primary">
-                  <h3 className="font-semibold text-primary mb-2">Summary</h3>
-                  <div className="text-sm leading-relaxed">
-                    {results.headline}
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-foreground mb-2">Summary</h3>
+                  <div className="text-sm leading-relaxed space-y-2">
+                    <p>
+                      {results.isSignificant 
+                        ? `The statistical analysis detected a significant ${
+                            comparisonType === "compare-to-target" ? "difference from the target value" :
+                            comparisonType === "compare-before-after" ? "change between time points" :
+                            "difference between groups"
+                          } (p = ${results.pValue < 0.001 ? "<0.001" : results.pValue.toFixed(3)}).`
+                        : `The statistical analysis did not detect a significant ${
+                            comparisonType === "compare-to-target" ? "difference from the target value" :
+                            comparisonType === "compare-before-after" ? "change between time points" :
+                            "difference between groups"
+                          } (p = ${results.pValue.toFixed(3)}).`
+                      }
+                    </p>
+                    <p>
+                      {results.effectSize && `The effect size (Cohen's d = ${results.effectSize.toFixed(2)}) indicates a ${
+                        Math.abs(results.effectSize) < 0.2 ? "small" :
+                        Math.abs(results.effectSize) < 0.5 ? "small to medium" :
+                        Math.abs(results.effectSize) < 0.8 ? "medium to large" : "large"
+                      } practical difference.`}
+                      {results.etaSquared && `The analysis explains ${(results.etaSquared * 100).toFixed(1)}% of the variance in the outcome variable.`}
+                    </p>
                   </div>
                 </div>
 
                 {/* Technical Details */}
-                <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="bg-secondary/5 p-4 rounded-lg">
                   <h3 className="font-semibold text-foreground mb-2">Technical Details</h3>
-                  <div className="text-sm leading-relaxed whitespace-pre-line">
-                    {results.technicalDescription}
+                  <div className="text-sm leading-relaxed whitespace-pre-line space-y-2">
+                    <div>{results.technicalDescription}</div>
+                    {results.confidenceInterval && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p><strong>Confidence Interval ({(1 - results.alpha) * 100}%):</strong></p>
+                        <p>[{results.confidenceInterval[0].toFixed(3)}, {results.confidenceInterval[1].toFixed(3)}]</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          We are {(1 - results.alpha) * 100}% confident the true {
+                            comparisonType === "compare-to-target" ? "population mean" :
+                            comparisonType === "compare-before-after" ? "mean difference" :
+                            "difference between groups"
+                          } falls within this range.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
