@@ -18,6 +18,7 @@ const TTestDashboard = () => {
   const [selectedVariables, setSelectedVariables] = useState(["", ""]);
   const [groupingVariable, setGroupingVariable] = useState("");
   const [outcomeVariable, setOutcomeVariable] = useState("");
+  const [successCategory, setSuccessCategory] = useState("");
   const [targetValue, setTargetValue] = useState("");
   const [alpha, setAlpha] = useState("0.05");
   const [alternative, setAlternative] = useState("two-sided");
@@ -125,7 +126,12 @@ const TTestDashboard = () => {
   const isReadyToAnalyze = () => {
     if (comparisonType === "compare-to-target") return selectedVariables[0] && targetValue;
     if (comparisonType === "compare-before-after") return selectedVariables[0] && selectedVariables[1];
-    if (comparisonType === "compare-groups") return groupingVariable && outcomeVariable;
+    if (comparisonType === "compare-groups") {
+      if (statisticType === "proportion") {
+        return groupingVariable && outcomeVariable && successCategory;
+      }
+      return groupingVariable && outcomeVariable;
+    }
     return false;
   };
 
@@ -207,39 +213,121 @@ const TTestDashboard = () => {
                        </SelectContent>
                      </Select>
                    </div>
-                 ) : comparisonType === "compare-groups" ? (
-                   <div className="space-y-4">
-                     <div>
-                       <Label className="text-base font-medium">Grouping variable (categorical)</Label>
-                       <Select value={groupingVariable} onValueChange={setGroupingVariable}>
-                         <SelectTrigger className="mt-2">
-                           <SelectValue placeholder="Choose a categorical variable that defines your groups" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           {categoricalVariables.map((variable) => (
-                             <SelectItem key={variable} value={variable}>
-                               {variable.replace(/_/g, ' ')}
-                             </SelectItem>
-                           ))}
-                         </SelectContent>
-                       </Select>
-                     </div>
-                     <div>
-                       <Label className="text-base font-medium">Outcome variable (numerical)</Label>
-                       <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
-                         <SelectTrigger className="mt-2">
-                           <SelectValue placeholder="Choose a numerical variable to compare across groups" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           {numericalVariables.map((variable) => (
-                             <SelectItem key={variable} value={variable}>
-                               {variable.replace(/_/g, ' ')}
-                             </SelectItem>
-                           ))}
-                         </SelectContent>
-                       </Select>
-                     </div>
-                   </div>
+                  ) : comparisonType === "compare-groups" ? (
+                    <div className="space-y-4">
+                      {statisticType === "proportion" ? (
+                        <>
+                          <div>
+                            <Label className="text-base font-medium">Outcome variable (categorical)</Label>
+                            <Select value={outcomeVariable} onValueChange={(value) => {
+                              setOutcomeVariable(value);
+                              setSuccessCategory(""); // Reset success category when outcome changes
+                            }}>
+                              <SelectTrigger className="mt-2">
+                                <SelectValue placeholder="Choose what you're measuring (Pass/Fail, Yes/No, etc.)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categoricalVariables.filter(v => v !== groupingVariable).map((variable) => (
+                                  <SelectItem key={variable} value={variable}>
+                                    {variable.replace(/_/g, ' ')}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          {outcomeVariable && (
+                            <div>
+                              <Label className="text-base font-medium">Success category</Label>
+                              <Select value={successCategory} onValueChange={setSuccessCategory}>
+                                <SelectTrigger className="mt-2">
+                                  <SelectValue placeholder="Which outcome counts as success?" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {/* Mock categories based on outcome variable */}
+                                  {outcomeVariable === "Treatment_Group" && (
+                                    <>
+                                      <SelectItem value="Treatment">Treatment</SelectItem>
+                                      <SelectItem value="Control">Control</SelectItem>
+                                    </>
+                                  )}
+                                  {outcomeVariable === "Gender" && (
+                                    <>
+                                      <SelectItem value="Male">Male</SelectItem>
+                                      <SelectItem value="Female">Female</SelectItem>
+                                    </>
+                                  )}
+                                  {outcomeVariable === "Grade_Level" && (
+                                    <>
+                                      <SelectItem value="Pass">Pass</SelectItem>
+                                      <SelectItem value="Fail">Fail</SelectItem>
+                                      <SelectItem value="Honors">Honors</SelectItem>
+                                    </>
+                                  )}
+                                  {!["Treatment_Group", "Gender", "Grade_Level"].includes(outcomeVariable) && (
+                                    <>
+                                      <SelectItem value="Yes">Yes</SelectItem>
+                                      <SelectItem value="No">No</SelectItem>
+                                      <SelectItem value="Success">Success</SelectItem>
+                                      <SelectItem value="Fail">Fail</SelectItem>
+                                    </>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <Label className="text-base font-medium">Grouping variable (categorical)</Label>
+                            <Select value={groupingVariable} onValueChange={setGroupingVariable}>
+                              <SelectTrigger className="mt-2">
+                                <SelectValue placeholder="Choose how to divide into groups" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categoricalVariables.filter(v => v !== outcomeVariable).map((variable) => (
+                                  <SelectItem key={variable} value={variable}>
+                                    {variable.replace(/_/g, ' ')}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <Label className="text-base font-medium">Grouping variable (categorical)</Label>
+                            <Select value={groupingVariable} onValueChange={setGroupingVariable}>
+                              <SelectTrigger className="mt-2">
+                                <SelectValue placeholder="Choose a categorical variable that defines your groups" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categoricalVariables.map((variable) => (
+                                  <SelectItem key={variable} value={variable}>
+                                    {variable.replace(/_/g, ' ')}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-base font-medium">Outcome variable (numerical)</Label>
+                            <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
+                              <SelectTrigger className="mt-2">
+                                <SelectValue placeholder="Choose a numerical variable to compare across groups" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {numericalVariables.map((variable) => (
+                                  <SelectItem key={variable} value={variable}>
+                                    {variable.replace(/_/g, ' ')}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </>
+                      )}
+                    </div>
                  ) : (
                   <div className="space-y-3">
                     {selectedVariables.map((variable, index) => (
