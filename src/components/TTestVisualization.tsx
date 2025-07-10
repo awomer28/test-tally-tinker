@@ -19,6 +19,10 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
   // Use results.testType for consistent visualization logic
   const actualTestType = results.testType || testType;
 
+  // Debug logging for chart data
+  console.log("actualTestType:", actualTestType);
+  console.log("results:", results);
+
   const distributionData = useMemo(() => {
     const points = [];
     const { tStatistic, df, criticalValue, alternative } = results;
@@ -125,6 +129,11 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
     }
     return [];
   }, [results, actualTestType]);
+
+  // Debug logging for chart data arrays
+  console.log("outcomeRatesData:", outcomeRatesData);
+  console.log("groupBreakdownData:", groupBreakdownData);
+  console.log("contingencyData:", contingencyData);
 
   return (
     <div className="space-y-6">
