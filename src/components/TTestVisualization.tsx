@@ -120,7 +120,7 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
   const outcomeRatesData = useMemo(() => {
     if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
       return results.proportions.map((proportion, index) => ({
-        group: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
+        group: proportion.groupName?.replace(/_/g, ' ') || proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
         rate: (proportion.proportion * 100),
         count: proportion.successes,
         total: proportion.total,
@@ -133,7 +133,7 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
   const groupBreakdownData = useMemo(() => {
     if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
       return results.proportions.map((proportion, index) => ({
-        group: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
+        group: proportion.groupName?.replace(/_/g, ' ') || proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
         success: proportion.successes,
         failure: proportion.total - proportion.successes,
         total: proportion.total,
@@ -303,7 +303,7 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
                     {results.proportions?.map((proportion, rowIndex) => (
                       <React.Fragment key={`row-${rowIndex}`}>
                         <div className="text-center font-semibold text-sm p-2">
-                          {proportion.group?.replace(/_/g, ' ') || `Group ${rowIndex + 1}`}
+                          {proportion.groupName?.replace(/_/g, ' ') || proportion.group?.replace(/_/g, ' ') || `Group ${rowIndex + 1}`}
                         </div>
                         <div className="text-center p-4 border rounded text-sm font-medium bg-green-200 border-green-300">
                           <div className="font-bold text-green-800">{proportion.successes}</div>
