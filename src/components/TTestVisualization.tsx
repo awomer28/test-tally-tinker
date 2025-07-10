@@ -219,6 +219,21 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
     return [];
   }, [results, actualTestType]);
 
+  // Calculate dynamic domain for distribution chart
+  const distributionDomain = useMemo(() => {
+    if (distributionComparisonData.length === 0) return [0, 100];
+    
+    const values = distributionComparisonData.map(d => d.binCenter).filter(v => v !== undefined);
+    if (values.length === 0) return [0, 100];
+    
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue;
+    const padding = range * 0.05; // 5% padding
+    
+    return [minValue - padding, maxValue + padding];
+  }, [distributionComparisonData]);
+
   // Debug logging for chart data arrays
   console.log("outcomeRatesData:", outcomeRatesData);
   console.log("groupBreakdownData:", groupBreakdownData);
@@ -563,6 +578,7 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
                     dataKey="binCenter" 
                     type="number"
                     scale="linear"
+                    domain={distributionDomain}
                     tickFormatter={(value) => value.toFixed(1)}
                     label={{ value: `${outcomeVariable?.replace(/_/g, ' ') || 'Values'}`, position: 'insideBottom', offset: -5 }}
                   />
