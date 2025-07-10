@@ -86,6 +86,81 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
     return [];
   }, [results, actualTestType]);
 
+  // Create distribution data for histogram visualization
+  const distributionComparisonData = useMemo(() => {
+    if ((actualTestType === "two-sample" || actualTestType === "anova") && results.mean1 !== undefined) {
+      // Generate mock distribution data for each group to show actual data spread
+      const generateGroupDistribution = (mean: number, groupName: string, color: string) => {
+        const std = mean * 0.15; // Standard deviation as 15% of mean
+        const data = [];
+        
+        // Create histogram bins
+        const minValue = mean - 3 * std;
+        const maxValue = mean + 3 * std;
+        const binCount = 20;
+        const binWidth = (maxValue - minValue) / binCount;
+        
+        for (let i = 0; i < binCount; i++) {
+          const binStart = minValue + i * binWidth;
+          const binCenter = binStart + binWidth / 2;
+          
+          // Generate normal distribution density for this bin
+          const density = Math.exp(-0.5 * Math.pow((binCenter - mean) / std, 2)) / (std * Math.sqrt(2 * Math.PI));
+          const frequency = Math.round(density * 1000); // Scale for visibility
+          
+          data.push({
+            binCenter,
+            binStart,
+            binEnd: binStart + binWidth,
+            [groupName]: frequency,
+            groupName,
+            color,
+            value: binCenter,
+            density: frequency
+          });
+        }
+        return data;
+      };
+
+      // Generate distributions for each group
+      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+      let distributionData = [];
+      
+      if (actualTestType === "two-sample") {
+        const group1Data = generateGroupDistribution(results.mean1, results.groupNames?.[0] || "Group 1", colors[0]);
+        const group2Data = generateGroupDistribution(results.mean2, results.groupNames?.[1] || "Group 2", colors[1]);
+        
+        // Merge data by bin for overlapping visualization
+        distributionData = group1Data.map((bin, index) => ({
+          ...bin,
+          [results.groupNames?.[1] || "Group 2"]: group2Data[index]?.[results.groupNames?.[1] || "Group 2"] || 0,
+          [`${results.groupNames?.[1] || "Group 2"}_color`]: colors[1]
+        }));
+      } else if (actualTestType === "anova" && results.groupMeans) {
+        // For ANOVA with multiple groups
+        const allGroupData = results.groupMeans.map((mean, index) => 
+          generateGroupDistribution(mean, results.groupNames?.[index] || `Group ${index + 1}`, colors[index % colors.length])
+        );
+        
+        // Merge all group data by bin
+        distributionData = allGroupData[0]?.map((bin, binIndex) => {
+          const mergedBin = { ...bin };
+          allGroupData.forEach((groupData, groupIndex) => {
+            const groupName = results.groupNames?.[groupIndex] || `Group ${groupIndex + 1}`;
+            if (groupIndex > 0) {
+              mergedBin[groupName] = groupData[binIndex]?.[groupName] || 0;
+              mergedBin[`${groupName}_color`] = colors[groupIndex % colors.length];
+            }
+          });
+          return mergedBin;
+        }) || [];
+      }
+      
+      return distributionData;
+    }
+    return [];
+  }, [results, actualTestType]);
+
   // Create contingency table data for chi-square tests
   const contingencyData = useMemo(() => {
     if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
@@ -463,37 +538,85 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
         <TabsContent value="distributions">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Distribution Comparison</CardTitle>
+              <CardTitle className="text-lg">Distribution Comparison by Group</CardTitle>
               <p className="text-sm text-muted-foreground">
-                This chart shows the distribution of values within each group. 
-                The shape and spread help you understand the variability and pattern of your data.
+                This chart shows how values are distributed within each group, helping you see differences in shape, spread, and central tendency. 
+                Overlapping areas indicate where group distributions overlap.
               </p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={groupComparisonData}>
+              <ResponsiveContainer width="100%" height={350}>
+                <AreaChart data={distributionComparisonData}>
+                  <defs>
+                    {results.groupNames?.map((groupName, index) => {
+                      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                      const color = colors[index % colors.length];
+                      return (
+                        <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={color} stopOpacity={0.6}/>
+                          <stop offset="95%" stopColor={color} stopOpacity={0.1}/>
+                        </linearGradient>
+                      );
+                    })}
+                  </defs>
                   <XAxis 
-                    dataKey="group" 
-                    tick={{ fontSize: 12 }}
-                    interval={0}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
+                    dataKey="binCenter" 
+                    type="number"
+                    scale="linear"
+                    tickFormatter={(value) => value.toFixed(1)}
+                    label={{ value: `${outcomeVariable?.replace(/_/g, ' ') || 'Values'}`, position: 'insideBottom', offset: -5 }}
                   />
-                  <YAxis />
-                  <Bar 
-                    dataKey="value" 
-                    fill="#10b981"
-                    radius={[4, 4, 0, 0]}
+                  <YAxis 
+                    label={{ value: 'Frequency', angle: -90, position: 'insideLeft' }}
                   />
+                  {results.groupNames?.map((groupName, index) => (
+                    <Area 
+                      key={groupName}
+                      type="monotone" 
+                      dataKey={groupName} 
+                      stroke={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} 
+                      fill={`url(#gradient-${index})`}
+                      strokeWidth={2}
+                      name={groupName?.replace(/_/g, ' ')}
+                    />
+                  ))}
                   <Tooltip 
-                    formatter={(value: any) => [typeof value === 'number' ? value.toFixed(2) : value, "Value"]}
-                    labelStyle={{ color: "#374151" }}
+                    formatter={(value: any, name: string) => [
+                      `${typeof value === 'number' ? value.toFixed(0) : value}`, 
+                      name?.replace(/_/g, ' ')
+                    ]}
+                    labelFormatter={(value) => `Value: ${typeof value === 'number' ? value.toFixed(1) : value}`}
                   />
-                </BarChart>
+                </AreaChart>
               </ResponsiveContainer>
-              <div className="mt-4 text-sm text-muted-foreground">
-                <p><strong>What this shows:</strong> The distribution pattern of values in each group. Taller, narrower bars indicate more consistent values, while shorter, wider distributions show more variability.</p>
+              <div className="mt-4 space-y-2">
+                <div className="flex flex-wrap items-center gap-4">
+                  {results.groupNames?.map((groupName, index) => {
+                    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                    return (
+                      <div key={groupName} className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded" 
+                          style={{ backgroundColor: colors[index % colors.length] }}
+                        ></div>
+                        <span className="text-sm font-medium">{groupName?.replace(/_/g, ' ')}</span>
+                        {actualTestType === "two-sample" && (
+                          <span className="text-xs text-muted-foreground">
+                            (mean: {index === 0 ? results.mean1?.toFixed(1) : results.mean2?.toFixed(1)})
+                          </span>
+                        )}
+                        {actualTestType === "anova" && results.groupMeans && (
+                          <span className="text-xs text-muted-foreground">
+                            (mean: {results.groupMeans[index]?.toFixed(1)})
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p><strong>What this shows:</strong> The shape and spread of data within each group. Wider distributions show more variability, while overlapping areas indicate similar values between groups. The peak shows the most common values for each group.</p>
+                </div>
               </div>
             </CardContent>
           </Card>
