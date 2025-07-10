@@ -193,6 +193,7 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
                   <YAxis 
                     domain={[0, 100]}
                     tickFormatter={(value) => `${value}%`}
+                    label={{ value: `${successCategory?.replace(/_/g, ' ') || 'Success'} Rate (%)`, angle: -90, position: 'insideLeft' }}
                   />
                   <Bar 
                     dataKey="rate" 
@@ -304,15 +305,15 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
                         <div className="text-center font-semibold text-sm p-2">
                           {proportion.group?.replace(/_/g, ' ') || `Group ${rowIndex + 1}`}
                         </div>
-                        <div className="text-center p-4 border rounded text-sm font-medium bg-green-50">
-                          <div className="font-bold">{proportion.successes}</div>
-                          <div className="text-xs opacity-75">
+                        <div className="text-center p-4 border rounded text-sm font-medium bg-green-200 border-green-300">
+                          <div className="font-bold text-green-800">{proportion.successes}</div>
+                          <div className="text-xs text-green-600">
                             {((proportion.successes / proportion.total) * 100).toFixed(1)}%
                           </div>
                         </div>
-                        <div className="text-center p-4 border rounded text-sm font-medium bg-red-50">
-                          <div className="font-bold">{proportion.total - proportion.successes}</div>
-                          <div className="text-xs opacity-75">
+                        <div className="text-center p-4 border rounded text-sm font-medium bg-red-200 border-red-300">
+                          <div className="font-bold text-red-800">{proportion.total - proportion.successes}</div>
+                          <div className="text-xs text-red-600">
                             {(((proportion.total - proportion.successes) / proportion.total) * 100).toFixed(1)}%
                           </div>
                         </div>
