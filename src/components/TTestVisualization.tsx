@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, XAxis, YAxis, Area, AreaChart, ReferenceLine, Tooltip, BarChart, Bar } from "recharts";
 import { useMemo } from "react";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TTestVisualizationProps {
@@ -75,14 +76,229 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
     return [];
   }, [results, testType]);
 
+  // Create contingency table data for chi-square tests
+  const contingencyData = useMemo(() => {
+    if (testType === "chi-square" && results.contingencyTable) {
+      const data = [];
+      results.contingencyTable.forEach((row, rowIndex) => {
+        row.forEach((value, colIndex) => {
+          data.push({
+            row: results.groupNames?.[rowIndex] || `Group ${rowIndex + 1}`,
+            col: results.outcomeNames?.[colIndex] || `Outcome ${colIndex + 1}`,
+            value: value,
+            expected: results.expectedFrequencies?.[rowIndex]?.[colIndex] || 0,
+            contribution: results.chiSquareContributions?.[rowIndex]?.[colIndex] || 0
+          });
+        });
+      });
+      return data;
+    }
+    return [];
+  }, [results, testType]);
+
+  const outcomeRatesData = useMemo(() => {
+    if (testType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
+      return results.groupNames.map((group, index) => ({
+        group: group.replace(/_/g, ' '),
+        rate: ((results.successes[index] / results.sampleSizes[index]) * 100),
+        count: results.successes[index],
+        total: results.sampleSizes[index],
+        label: `${((results.successes[index] / results.sampleSizes[index]) * 100).toFixed(1)}% (${results.successes[index]}/${results.sampleSizes[index]})`
+      }));
+    }
+    return [];
+  }, [results, testType]);
+
+  const groupBreakdownData = useMemo(() => {
+    if (testType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
+      return results.groupNames.map((group, index) => ({
+        group: group.replace(/_/g, ' '),
+        success: results.successes[index],
+        failure: results.sampleSizes[index] - results.successes[index],
+        total: results.sampleSizes[index],
+        successRate: ((results.successes[index] / results.sampleSizes[index]) * 100).toFixed(1),
+        failureRate: (((results.sampleSizes[index] - results.successes[index]) / results.sampleSizes[index]) * 100).toFixed(1)
+      }));
+    }
+    return [];
+  }, [results, testType]);
+
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="distribution" className="w-full">
+      <Tabs defaultValue={testType === "chi-square" ? "rates" : "distribution"} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="distribution">Statistical Distribution</TabsTrigger>
-          <TabsTrigger value="comparison">Group Comparison</TabsTrigger>
-          <TabsTrigger value="distributions">Group Distributions</TabsTrigger>
+          {testType === "chi-square" ? (
+            <>
+              <TabsTrigger value="rates">Outcome Rates Comparison</TabsTrigger>
+              <TabsTrigger value="breakdown">Group Breakdown</TabsTrigger>
+              <TabsTrigger value="contingency">Contingency Table Visualization</TabsTrigger>
+            </>
+          ) : (
+            <>
+              <TabsTrigger value="distribution">Statistical Distribution</TabsTrigger>
+              <TabsTrigger value="comparison">Group Comparison</TabsTrigger>
+              <TabsTrigger value="distributions">Group Distributions</TabsTrigger>
+            </>
+          )}
         </TabsList>
+        
+        {/* Chi-square specific tabs */}
+        <TabsContent value="rates">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Outcome Rates Comparison</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This chart shows the outcome rates (percentages) for each group with sample sizes displayed.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={outcomeRatesData}>
+                  <XAxis 
+                    dataKey="group" 
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    domain={[0, 100]}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <Bar 
+                    dataKey="rate" 
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Tooltip 
+                    formatter={(value: any, name: string) => [`${value.toFixed(1)}%`, "Success Rate"]}
+                    labelFormatter={(label) => {
+                      const item = outcomeRatesData.find(d => d.group === label);
+                      return `${label}: ${item?.label || ''}`;
+                    }}
+                    labelStyle={{ color: "#374151" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="breakdown">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Group Breakdown</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This chart shows the breakdown of outcomes vs non-outcomes for each group with counts and percentages.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={groupBreakdownData}>
+                  <XAxis 
+                    dataKey="group" 
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis />
+                  <Bar 
+                    dataKey="success" 
+                    stackId="a"
+                    fill="#10b981" 
+                    name="Success"
+                  />
+                  <Bar 
+                    dataKey="failure" 
+                    stackId="a"
+                    fill="#ef4444" 
+                    name="Failure"
+                  />
+                  <Tooltip 
+                    formatter={(value: any, name: string, props: any) => {
+                      const group = props?.payload?.group;
+                      const item = groupBreakdownData.find(d => d.group === group);
+                      const percentage = name === 'success' ? item?.successRate : item?.failureRate;
+                      return [
+                        `${value} (${percentage || 0}%)`, 
+                        name === 'success' ? 'Success' : 'Failure'
+                      ];
+                    }}
+                    labelStyle={{ color: "#374151" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <span>Success</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded"></div>
+                    <span>Failure</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="contingency">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Contingency Table Visualization</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This heatmap shows the contingency table with observed counts. Color intensity indicates contribution to the chi-square statistic.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Contingency table as a visual grid */}
+                <div className="grid grid-cols-3 gap-2 max-w-md mx-auto">
+                  <div className="text-center font-semibold text-sm"></div>
+                  {results.outcomeNames?.map((outcome, index) => (
+                    <div key={index} className="text-center font-semibold text-sm p-2">
+                      {outcome.replace(/_/g, ' ')}
+                    </div>
+                  ))}
+                  {results.groupNames?.map((group, rowIndex) => (
+                    <React.Fragment key={rowIndex}>
+                      <div className="text-center font-semibold text-sm p-2">
+                        {group.replace(/_/g, ' ')}
+                      </div>
+                      {results.contingencyTable?.[rowIndex]?.map((value, colIndex) => {
+                        const contribution = results.chiSquareContributions?.[rowIndex]?.[colIndex] || 0;
+                        const intensity = Math.min(contribution / (results.chiSquare || 1) * 100, 100);
+                        return (
+                          <div 
+                            key={colIndex}
+                            className="text-center p-4 border rounded text-sm font-medium"
+                            style={{
+                              backgroundColor: `hsl(${intensity > 20 ? '0' : '210'}, 50%, ${Math.max(95 - intensity, 50)}%)`,
+                              color: intensity > 40 ? 'white' : 'black'
+                            }}
+                          >
+                            <div className="font-bold">{value}</div>
+                            <div className="text-xs opacity-75">
+                              Exp: {results.expectedFrequencies?.[rowIndex]?.[colIndex]?.toFixed?.(1) || 'N/A'}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className="text-center text-xs text-muted-foreground">
+                  Color intensity indicates contribution to chi-square statistic. Red = high contribution, Blue = low contribution.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="distribution">
           <Card>
