@@ -16,10 +16,8 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
     return <div>No visualization data available</div>;
   }
 
-  // Debug logging
-  console.log("TTestVisualization - testType:", testType);
-  console.log("TTestVisualization - results:", results);
-  console.log("TTestVisualization - results.testType:", results.testType);
+  // Use results.testType for consistent visualization logic
+  const actualTestType = results.testType || testType;
 
   const distributionData = useMemo(() => {
     const points = [];
@@ -66,24 +64,24 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
   }, [results]);
 
   const groupComparisonData = useMemo(() => {
-    if (testType === "anova" && results.groupMeans && results.groupNames) {
+    if (actualTestType === "anova" && results.groupMeans && results.groupNames) {
       return results.groupNames.map((name, index) => ({
         group: name.replace(/_/g, ' '),
         value: results.groupMeans[index],
         isSignificant: results.isSignificant
       }));
-    } else if (testType === "two-sample" && results.mean1 !== undefined && results.mean2 !== undefined) {
+    } else if (actualTestType === "two-sample" && results.mean1 !== undefined && results.mean2 !== undefined) {
       return [
         { group: results.groupNames?.[0]?.replace(/_/g, ' ') || "Group 1", value: results.mean1, isSignificant: results.isSignificant },
         { group: results.groupNames?.[1]?.replace(/_/g, ' ') || "Group 2", value: results.mean2, isSignificant: results.isSignificant }
       ];
     }
     return [];
-  }, [results, testType]);
+  }, [results, actualTestType]);
 
   // Create contingency table data for chi-square tests
   const contingencyData = useMemo(() => {
-    if (testType === "chi-square" && results.contingencyTable) {
+    if (actualTestType === "chi-square" && results.contingencyTable) {
       const data = [];
       results.contingencyTable.forEach((row, rowIndex) => {
         row.forEach((value, colIndex) => {
@@ -99,10 +97,10 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
       return data;
     }
     return [];
-  }, [results, testType]);
+  }, [results, actualTestType]);
 
   const outcomeRatesData = useMemo(() => {
-    if (testType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
+    if (actualTestType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
       return results.groupNames.map((group, index) => ({
         group: group.replace(/_/g, ' '),
         rate: ((results.successes[index] / results.sampleSizes[index]) * 100),
@@ -112,10 +110,10 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
       }));
     }
     return [];
-  }, [results, testType]);
+  }, [results, actualTestType]);
 
   const groupBreakdownData = useMemo(() => {
-    if (testType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
+    if (actualTestType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
       return results.groupNames.map((group, index) => ({
         group: group.replace(/_/g, ' '),
         success: results.successes[index],
@@ -126,13 +124,13 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
       }));
     }
     return [];
-  }, [results, testType]);
+  }, [results, actualTestType]);
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue={testType === "chi-square" ? "rates" : "distribution"} className="w-full">
+      <Tabs defaultValue={actualTestType === "chi-square" ? "rates" : "distribution"} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          {testType === "chi-square" ? (
+          {actualTestType === "chi-square" ? (
             <>
               <TabsTrigger value="rates">Outcome Rates Comparison</TabsTrigger>
               <TabsTrigger value="breakdown">Group Breakdown</TabsTrigger>
