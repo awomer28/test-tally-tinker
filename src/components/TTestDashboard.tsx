@@ -462,7 +462,15 @@ const TTestDashboard = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Analysis Results</h1>
+              <h1 className="text-3xl font-bold text-foreground">
+                {comparisonType === "compare-to-target" && selectedVariables[0] && targetValue
+                  ? `Testing if ${selectedVariables[0].replace(/_/g, ' ').toLowerCase()} differs from ${targetValue}`
+                  : comparisonType === "compare-before-after" && selectedVariables[0] && selectedVariables[1]
+                  ? `Testing changes from ${selectedVariables[0].replace(/_/g, ' ').toLowerCase()} to ${selectedVariables[1].replace(/_/g, ' ').toLowerCase()}`
+                  : comparisonType === "compare-groups" && groupingVariable && outcomeVariable
+                  ? `Testing ${outcomeVariable.replace(/_/g, ' ').toLowerCase()} differences by ${groupingVariable.replace(/_/g, ' ').toLowerCase()}`
+                  : "Analysis Results"}
+              </h1>
               <p className="text-muted-foreground mt-2">
                 {results.testUsed} • {(1 - results.alpha) * 100}% confidence level
               </p>
@@ -567,28 +575,28 @@ const TTestDashboard = () => {
 
                    {comparisonType === "compare-groups" && results.testType !== "anova" && (
                     <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
-                            <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">{selectedVariables[0]?.replace(/_/g, ' ')}</div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Average value for the first group</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
-                            <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">{selectedVariables[1]?.replace(/_/g, ' ')}</div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Average value for the second group</p>
-                        </TooltipContent>
-                      </Tooltip>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                             <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
+                             <div className="text-sm text-muted-foreground">{results.groupNames?.[0]?.replace(/_/g, ' ') || "Group 1"} average</div>
+                           </div>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Average value for the first group</p>
+                         </TooltipContent>
+                       </Tooltip>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                             <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
+                             <div className="text-sm text-muted-foreground">{results.groupNames?.[1]?.replace(/_/g, ' ') || "Group 2"} average</div>
+                           </div>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Average value for the second group</p>
+                         </TooltipContent>
+                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
@@ -645,19 +653,22 @@ const TTestDashboard = () => {
                 </div>
               </TooltipProvider>
               
-              {/* Headline */}
-              <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-l-primary mb-4">
-                <h3 className="font-semibold text-primary mb-2">Headline</h3>
-                <div className="text-sm leading-relaxed">
-                  {results.headline}
+              {/* Summary and Technical Details Side by Side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Summary Section */}
+                <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-l-primary">
+                  <h3 className="font-semibold text-primary mb-2">Summary</h3>
+                  <div className="text-sm leading-relaxed">
+                    {results.headline}
+                  </div>
                 </div>
-              </div>
 
-              {/* Technical Description */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h3 className="font-semibold text-foreground mb-2">Technical Details</h3>
-                <div className="text-sm leading-relaxed whitespace-pre-line">
-                  {results.technicalDescription}
+                {/* Technical Details */}
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-foreground mb-2">Technical Details</h3>
+                  <div className="text-sm leading-relaxed whitespace-pre-line">
+                    {results.technicalDescription}
+                  </div>
                 </div>
               </div>
             </CardContent>
