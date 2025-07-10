@@ -175,7 +175,7 @@ const TTestDashboard = () => {
                      <SelectItem value="compare-groups">
                        <div className="flex items-center gap-2">
                          <Users className="w-4 h-4" />
-                         Compare between groups
+                         Compare averages between groups
                        </div>
                      </SelectItem>
                      <SelectItem value="compare-different-variables">
@@ -311,13 +311,16 @@ const TTestDashboard = () => {
                         ) : (
                         <>
                           <div>
-                            <Label className="text-base font-medium">Grouping variable (categorical)</Label>
-                            <Select value={groupingVariable} onValueChange={setGroupingVariable}>
+                            <Label className="text-base font-medium">What do you want to measure?</Label>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Choose the numerical variable you want to compare across groups
+                            </p>
+                            <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
                               <SelectTrigger className="mt-2">
-                                <SelectValue placeholder="Choose a categorical variable that defines your groups" />
+                                <SelectValue placeholder="Choose a numerical variable (e.g., Test Score, Income, Age)" />
                               </SelectTrigger>
                               <SelectContent>
-                                {categoricalVariables.map((variable) => (
+                                {numericalVariables.map((variable) => (
                                   <SelectItem key={variable} value={variable}>
                                     {variable.replace(/_/g, ' ')}
                                   </SelectItem>
@@ -326,13 +329,16 @@ const TTestDashboard = () => {
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-base font-medium">Outcome variable (numerical)</Label>
-                            <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
+                            <Label className="text-base font-medium">How are your groups defined?</Label>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Choose the categorical variable that divides your data into groups
+                            </p>
+                            <Select value={groupingVariable} onValueChange={setGroupingVariable}>
                               <SelectTrigger className="mt-2">
-                                <SelectValue placeholder="Choose a numerical variable to compare across groups" />
+                                <SelectValue placeholder="Choose a categorical variable (e.g., Gender, Treatment Group, Region)" />
                               </SelectTrigger>
                               <SelectContent>
-                                {numericalVariables.map((variable) => (
+                                {categoricalVariables.map((variable) => (
                                   <SelectItem key={variable} value={variable}>
                                     {variable.replace(/_/g, ' ')}
                                   </SelectItem>
@@ -468,7 +474,7 @@ const TTestDashboard = () => {
                  <AlertDescription>
                    {comparisonType === "compare-to-target" && "Compare your variable's average to a specific target or benchmark value."}
                    {comparisonType === "compare-before-after" && "Analyze changes in the same subjects measured at two different times."}
-                   {comparisonType === "compare-groups" && "Compare a numerical variable across different groups defined by a categorical variable (e.g., compare test scores between male vs female students)."}
+                   {comparisonType === "compare-groups" && `Compare average ${outcomeVariable ? outcomeVariable.replace(/_/g, ' ').toLowerCase() : 'values'} between different ${groupingVariable ? groupingVariable.replace(/_/g, ' ').toLowerCase() : 'groups'} (e.g., compare average test scores between male vs female students).`}
                    {comparisonType === "compare-different-variables" && "Compare different variables or metrics from your dataset."}
                  </AlertDescription>
               </Alert>
