@@ -472,7 +472,7 @@ const TTestDashboard = () => {
                   : "Analysis Results"}
               </h1>
               <p className="text-muted-foreground mt-2">
-                {results.testUsed} • {(1 - results.alpha) * 100}% confidence level
+                {results.testUsed}
               </p>
             </div>
             <Button
@@ -680,6 +680,9 @@ const TTestDashboard = () => {
                             "difference between groups"
                           } (p = ${results.pValue.toFixed(3)}).`
                       }
+                    </p>
+                    <p>
+                      This conclusion is based on a {(1 - results.alpha) * 100}% confidence level, meaning we accept a {(results.alpha * 100).toFixed(0)}% chance of incorrectly detecting a difference when none actually exists.
                     </p>
                     <p>
                       {results.effectSize && `The effect size (Cohen's d = ${results.effectSize.toFixed(2)}) indicates a ${
