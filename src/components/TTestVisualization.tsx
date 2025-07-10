@@ -85,17 +85,25 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
 
   // Create contingency table data for chi-square tests
   const contingencyData = useMemo(() => {
-    if (actualTestType === "chi-square" && results.contingencyTable) {
+    if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
+      // Create a 2x2 contingency table from proportions data
       const data = [];
-      results.contingencyTable.forEach((row, rowIndex) => {
-        row.forEach((value, colIndex) => {
-          data.push({
-            row: results.groupNames?.[rowIndex] || `Group ${rowIndex + 1}`,
-            col: results.outcomeNames?.[colIndex] || `Outcome ${colIndex + 1}`,
-            value: value,
-            expected: results.expectedFrequencies?.[rowIndex]?.[colIndex] || 0,
-            contribution: results.chiSquareContributions?.[rowIndex]?.[colIndex] || 0
-          });
+      results.proportions.forEach((proportion, index) => {
+        // Success column
+        data.push({
+          row: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
+          col: 'Success',
+          value: proportion.successes,
+          expected: 0, // Will be calculated if needed
+          contribution: 0 // Will be calculated if needed
+        });
+        // Failure column
+        data.push({
+          row: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
+          col: 'Failure',
+          value: proportion.total - proportion.successes,
+          expected: 0,
+          contribution: 0
         });
       });
       return data;
@@ -104,27 +112,27 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
   }, [results, actualTestType]);
 
   const outcomeRatesData = useMemo(() => {
-    if (actualTestType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
-      return results.groupNames.map((group, index) => ({
-        group: group.replace(/_/g, ' '),
-        rate: ((results.successes[index] / results.sampleSizes[index]) * 100),
-        count: results.successes[index],
-        total: results.sampleSizes[index],
-        label: `${((results.successes[index] / results.sampleSizes[index]) * 100).toFixed(1)}% (${results.successes[index]}/${results.sampleSizes[index]})`
+    if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
+      return results.proportions.map((proportion, index) => ({
+        group: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
+        rate: (proportion.successRate * 100),
+        count: proportion.successes,
+        total: proportion.total,
+        label: `${(proportion.successRate * 100).toFixed(1)}% (${proportion.successes}/${proportion.total})`
       }));
     }
     return [];
   }, [results, actualTestType]);
 
   const groupBreakdownData = useMemo(() => {
-    if (actualTestType === "chi-square" && results.groupNames && results.sampleSizes && results.successes) {
-      return results.groupNames.map((group, index) => ({
-        group: group.replace(/_/g, ' '),
-        success: results.successes[index],
-        failure: results.sampleSizes[index] - results.successes[index],
-        total: results.sampleSizes[index],
-        successRate: ((results.successes[index] / results.sampleSizes[index]) * 100).toFixed(1),
-        failureRate: (((results.sampleSizes[index] - results.successes[index]) / results.sampleSizes[index]) * 100).toFixed(1)
+    if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
+      return results.proportions.map((proportion, index) => ({
+        group: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
+        success: proportion.successes,
+        failure: proportion.total - proportion.successes,
+        total: proportion.total,
+        successRate: (proportion.successRate * 100).toFixed(1),
+        failureRate: ((1 - proportion.successRate) * 100).toFixed(1)
       }));
     }
     return [];
