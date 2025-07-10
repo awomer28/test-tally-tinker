@@ -623,7 +623,7 @@ const TTestDashboard = () => {
                       </>
                     )}
 
-                   {comparisonType === "compare-groups" && results.testType !== "anova" && (
+                   {comparisonType === "compare-groups" && results.testType !== "anova" && results.testType !== "chi-square" && (
                     <>
                        <Tooltip>
                          <TooltipTrigger asChild>
@@ -744,7 +744,7 @@ const TTestDashboard = () => {
                       {results.cramersV && `The effect size (Cramér's V = ${results.cramersV.toFixed(3)}) indicates a ${
                         results.cramersV < 0.1 ? "small" :
                         results.cramersV < 0.3 ? "medium" : "large"
-                      } association between variables.`}
+                      } practical difference in success rates.`}
                       {results.oddsRatio && results.riskRatio && ` The odds ratio (${results.oddsRatio.toFixed(2)}) and risk ratio (${results.riskRatio.toFixed(2)}) quantify the practical difference between groups.`}
                     </p>
                   </div>
