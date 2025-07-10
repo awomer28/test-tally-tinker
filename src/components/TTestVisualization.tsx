@@ -10,9 +10,19 @@ interface TTestVisualizationProps {
 }
 
 const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
+  // Add null checks to prevent errors
+  if (!results || typeof results !== 'object') {
+    return <div>No visualization data available</div>;
+  }
+
   const distributionData = useMemo(() => {
     const points = [];
     const { tStatistic, df, criticalValue, alternative } = results;
+    
+    // Add safety checks for required values
+    if (tStatistic === undefined || df === undefined || criticalValue === undefined) {
+      return [];
+    }
     
     // Generate t-distribution curve
     for (let x = -5; x <= 5; x += 0.1) {
@@ -111,14 +121,16 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                 fill="url(#distributionGradient)"
                 strokeWidth={2}
               />
-              <ReferenceLine 
-                x={results.tStatistic} 
-                stroke="#10b981" 
-                strokeWidth={3}
-                strokeDasharray="5 5"
-                label={{ value: `t = ${results.tStatistic.toFixed(2)}`, position: "top" }}
-              />
-              {results.alternative === "two-sided" && (
+              {results.tStatistic !== undefined && (
+                <ReferenceLine 
+                  x={results.tStatistic} 
+                  stroke="#10b981" 
+                  strokeWidth={3}
+                  strokeDasharray="5 5"
+                  label={{ value: `t = ${results.tStatistic.toFixed(2)}`, position: "top" }}
+                />
+              )}
+              {results.alternative === "two-sided" && results.criticalValue !== undefined && (
                 <>
                   <ReferenceLine 
                     x={results.criticalValue} 
@@ -136,10 +148,10 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
               )}
               <Tooltip 
                 formatter={(value: any, name: string) => [
-                  `${value.toFixed(4)}`, 
+                  `${typeof value === 'number' ? value.toFixed(4) : value}`, 
                   name === 'density' ? 'Probability Density' : name
                 ]}
-                labelFormatter={(value) => `t = ${value.toFixed(2)}`}
+                labelFormatter={(value) => `t = ${typeof value === 'number' ? value.toFixed(2) : value}`}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -190,7 +202,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                     radius={[4, 4, 0, 0]}
                   />
                   <Tooltip 
-                    formatter={(value: any) => [value.toFixed(2), "Average"]}
+                    formatter={(value: any) => [typeof value === 'number' ? value.toFixed(2) : value, "Average"]}
                     labelStyle={{ color: "#374151" }}
                   />
                 </BarChart>
@@ -226,7 +238,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                     radius={[4, 4, 0, 0]}
                   />
                   <Tooltip 
-                    formatter={(value: any) => [value.toFixed(2), "Value"]}
+                    formatter={(value: any) => [typeof value === 'number' ? value.toFixed(2) : value, "Value"]}
                     labelStyle={{ color: "#374151" }}
                   />
                 </BarChart>
@@ -253,7 +265,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
           <CardContent>
             <div className="mb-4">
               <div className="text-center text-lg font-mono">
-                [{results.confidenceInterval[0].toFixed(3)}, {results.confidenceInterval[1].toFixed(3)}]
+                [{results.confidenceInterval?.[0]?.toFixed?.(3) || 'N/A'}, {results.confidenceInterval?.[1]?.toFixed?.(3) || 'N/A'}]
               </div>
             </div>
             <ResponsiveContainer width="100%" height={100}>
