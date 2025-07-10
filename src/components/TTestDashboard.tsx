@@ -488,9 +488,6 @@ const TTestDashboard = () => {
                   ? `Testing ${outcomeVariable.replace(/_/g, ' ').toLowerCase()} differences by ${groupingVariable.replace(/_/g, ' ').toLowerCase()}`
                   : "Analysis Results"}
               </h1>
-              <p className="text-muted-foreground mt-2">
-                {results.testUsed}
-              </p>
             </div>
             <Button
               variant="outline"
@@ -780,6 +777,9 @@ const TTestDashboard = () => {
             testType={results.testType === "anova" ? "anova" : 
                      comparisonType === "compare-before-after" ? "paired" : 
                      comparisonType === "compare-to-target" ? "one-sample" : "two-sample"}
+            groupingVariable={groupingVariable}
+            outcomeVariable={outcomeVariable}
+            successCategory={successCategory}
           />
         </div>
       )}

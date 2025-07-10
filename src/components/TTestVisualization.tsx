@@ -8,9 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface TTestVisualizationProps {
   results: any;
   testType: string;
+  groupingVariable?: string;
+  outcomeVariable?: string;
+  successCategory?: string;
 }
 
-const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
+const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariable, successCategory }: TTestVisualizationProps) => {
   // Add null checks to prevent errors
   if (!results || typeof results !== 'object') {
     return <div>No visualization data available</div>;
@@ -88,11 +91,14 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
     if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
       // Create a 2x2 contingency table from proportions data
       const data = [];
+      const successLabel = successCategory?.replace(/_/g, ' ') || 'Success';
+      const failureLabel = successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure';
+      
       results.proportions.forEach((proportion, index) => {
         // Success column
         data.push({
           row: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
-          col: 'Success',
+          col: successLabel,
           value: proportion.successes,
           expected: 0, // Will be calculated if needed
           contribution: 0 // Will be calculated if needed
@@ -100,7 +106,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
         // Failure column
         data.push({
           row: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
-          col: 'Failure',
+          col: failureLabel,
           value: proportion.total - proportion.successes,
           expected: 0,
           contribution: 0
@@ -109,7 +115,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
       return data;
     }
     return [];
-  }, [results, actualTestType]);
+  }, [results, actualTestType, successCategory]);
 
   const outcomeRatesData = useMemo(() => {
     if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
@@ -166,9 +172,11 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
         <TabsContent value="rates">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Outcome Rates Comparison</CardTitle>
+              <CardTitle className="text-lg">
+                {successCategory?.replace(/_/g, ' ') || 'Success'} Rate by {groupingVariable?.replace(/_/g, ' ') || 'Group'}
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                This chart shows the outcome rates (percentages) for each group with sample sizes displayed.
+                This chart shows the {successCategory?.replace(/_/g, ' ').toLowerCase() || 'success'} rates (percentages) for each {groupingVariable?.replace(/_/g, ' ').toLowerCase() || 'group'} with sample sizes displayed.
               </p>
             </CardHeader>
             <CardContent>
@@ -192,7 +200,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                     radius={[4, 4, 0, 0]}
                   />
                   <Tooltip 
-                    formatter={(value: any, name: string) => [`${value.toFixed(1)}%`, "Success Rate"]}
+                    formatter={(value: any, name: string) => [`${value.toFixed(1)}%`, `${successCategory?.replace(/_/g, ' ') || 'Success'} Rate`]}
                     labelFormatter={(label) => {
                       const item = outcomeRatesData.find(d => d.group === label);
                       return `${label}: ${item?.label || ''}`;
@@ -208,9 +216,11 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
         <TabsContent value="breakdown">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Group Breakdown</CardTitle>
+              <CardTitle className="text-lg">
+                {outcomeVariable?.replace(/_/g, ' ') || 'Outcome'} Breakdown by {groupingVariable?.replace(/_/g, ' ') || 'Group'}
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                This chart shows the breakdown of outcomes vs non-outcomes for each group with counts and percentages.
+                This chart shows the breakdown of {successCategory?.replace(/_/g, ' ').toLowerCase() || 'success'} vs {successCategory ? `not ${successCategory.replace(/_/g, ' ').toLowerCase()}` : 'failure'} for each {groupingVariable?.replace(/_/g, ' ').toLowerCase() || 'group'} with counts and percentages.
               </p>
             </CardHeader>
             <CardContent>
@@ -229,13 +239,13 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                     dataKey="success" 
                     stackId="a"
                     fill="#10b981" 
-                    name="Success"
+                    name={successCategory?.replace(/_/g, ' ') || "Success"}
                   />
                   <Bar 
                     dataKey="failure" 
                     stackId="a"
                     fill="#ef4444" 
-                    name="Failure"
+                    name={successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : "Failure"}
                   />
                   <Tooltip 
                     formatter={(value: any, name: string, props: any) => {
@@ -244,7 +254,7 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                       const percentage = name === 'success' ? item?.successRate : item?.failureRate;
                       return [
                         `${value} (${percentage || 0}%)`, 
-                        name === 'success' ? 'Success' : 'Failure'
+                        name === 'success' ? (successCategory?.replace(/_/g, ' ') || 'Success') : (successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure')
                       ];
                     }}
                     labelStyle={{ color: "#374151" }}
@@ -255,11 +265,11 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded"></div>
-                    <span>Success</span>
+                    <span>{successCategory?.replace(/_/g, ' ') || 'Success'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-red-500 rounded"></div>
-                    <span>Failure</span>
+                    <span>{successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure'}</span>
                   </div>
                 </div>
               </div>
@@ -270,50 +280,52 @@ const TTestVisualization = ({ results, testType }: TTestVisualizationProps) => {
         <TabsContent value="contingency">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Contingency Table Visualization</CardTitle>
+              <CardTitle className="text-lg">
+                {outcomeVariable?.replace(/_/g, ' ') || 'Outcome'} by {groupingVariable?.replace(/_/g, ' ') || 'Group'} Table
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                This heatmap shows the contingency table with observed counts. Color intensity indicates contribution to the chi-square statistic.
+                This table shows the counts and percentages for each combination of {groupingVariable?.replace(/_/g, ' ').toLowerCase() || 'group'} and {outcomeVariable?.replace(/_/g, ' ').toLowerCase() || 'outcome'}.
               </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {/* Contingency table as a visual grid */}
-                <div className="grid grid-cols-3 gap-2 max-w-md mx-auto">
-                  <div className="text-center font-semibold text-sm"></div>
-                  {results.outcomeNames?.map((outcome, index) => (
-                    <div key={index} className="text-center font-semibold text-sm p-2">
-                      {outcome.replace(/_/g, ' ')}
+                {contingencyData.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 max-w-md mx-auto">
+                    <div className="text-center font-semibold text-sm"></div>
+                    <div className="text-center font-semibold text-sm p-2">
+                      {successCategory?.replace(/_/g, ' ') || 'Success'}
                     </div>
-                  ))}
-                  {results.groupNames?.map((group, rowIndex) => (
-                    <React.Fragment key={`row-${rowIndex}`}>
-                      <div className="text-center font-semibold text-sm p-2">
-                        {group.replace(/_/g, ' ')}
-                      </div>
-                      {results.contingencyTable?.[rowIndex]?.map((value, colIndex) => {
-                        const contribution = results.chiSquareContributions?.[rowIndex]?.[colIndex] || 0;
-                        const intensity = Math.min(contribution / (results.chiSquare || 1) * 100, 100);
-                        return (
-                          <div 
-                            key={colIndex}
-                            className="text-center p-4 border rounded text-sm font-medium"
-                            style={{
-                              backgroundColor: `hsl(${intensity > 20 ? '0' : '210'}, 50%, ${Math.max(95 - intensity, 50)}%)`,
-                              color: intensity > 40 ? 'white' : 'black'
-                            }}
-                          >
-                            <div className="font-bold">{value}</div>
-                            <div className="text-xs opacity-75">
-                              Exp: {results.expectedFrequencies?.[rowIndex]?.[colIndex]?.toFixed?.(1) || 'N/A'}
-                            </div>
+                    <div className="text-center font-semibold text-sm p-2">
+                      {successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure'}
+                    </div>
+                    {results.proportions?.map((proportion, rowIndex) => (
+                      <React.Fragment key={`row-${rowIndex}`}>
+                        <div className="text-center font-semibold text-sm p-2">
+                          {proportion.group?.replace(/_/g, ' ') || `Group ${rowIndex + 1}`}
+                        </div>
+                        <div className="text-center p-4 border rounded text-sm font-medium bg-green-50">
+                          <div className="font-bold">{proportion.successes}</div>
+                          <div className="text-xs opacity-75">
+                            {((proportion.successes / proportion.total) * 100).toFixed(1)}%
                           </div>
-                        );
-                      })}
-                    </React.Fragment>
-                  ))}
-                </div>
+                        </div>
+                        <div className="text-center p-4 border rounded text-sm font-medium bg-red-50">
+                          <div className="font-bold">{proportion.total - proportion.successes}</div>
+                          <div className="text-xs opacity-75">
+                            {(((proportion.total - proportion.successes) / proportion.total) * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    No contingency table data available
+                  </div>
+                )}
                 <div className="text-center text-xs text-muted-foreground">
-                  Color intensity indicates contribution to chi-square statistic. Red = high contribution, Blue = low contribution.
+                  Green = {successCategory?.replace(/_/g, ' ') || 'Success'}, Red = {successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure'}. Numbers show counts and percentages.
                 </div>
               </div>
             </CardContent>
