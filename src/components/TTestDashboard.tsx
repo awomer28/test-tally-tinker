@@ -662,7 +662,7 @@ const TTestDashboard = () => {
               </div>
 
               {/* Summary and Technical Details Side by Side */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Summary Section */}
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <h3 className="font-semibold text-foreground mb-2">Summary</h3>
