@@ -121,10 +121,10 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
     if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
       return results.proportions.map((proportion, index) => ({
         group: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
-        rate: (proportion.successRate * 100),
+        rate: (proportion.proportion * 100),
         count: proportion.successes,
         total: proportion.total,
-        label: `${(proportion.successRate * 100).toFixed(1)}% (${proportion.successes}/${proportion.total})`
+        label: `${(proportion.proportion * 100).toFixed(1)}% (${proportion.successes}/${proportion.total})`
       }));
     }
     return [];
@@ -137,8 +137,8 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
         success: proportion.successes,
         failure: proportion.total - proportion.successes,
         total: proportion.total,
-        successRate: (proportion.successRate * 100).toFixed(1),
-        failureRate: ((1 - proportion.successRate) * 100).toFixed(1)
+        successRate: (proportion.proportion * 100).toFixed(1),
+        failureRate: ((1 - proportion.proportion) * 100).toFixed(1)
       }));
     }
     return [];
