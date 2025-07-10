@@ -460,3 +460,153 @@ Mean difference = ${meanDifference.toFixed(2)}`;
   
   return { headline: "Analysis completed.", technicalDescription: "No detailed results available." };
 }
+
+// Calculate chi-square test for proportions
+export function calculateChiSquareTest(
+  groups: { groupName: string; successes: number; total: number }[],
+  alpha: number,
+  successCategory: string
+) {
+  const k = groups.length;
+  
+  // Calculate proportions
+  const proportions = groups.map(g => ({
+    ...g,
+    proportion: g.successes / g.total,
+    failures: g.total - g.successes
+  }));
+  
+  // Overall proportion
+  const totalSuccesses = proportions.reduce((sum, p) => sum + p.successes, 0);
+  const totalSample = proportions.reduce((sum, p) => sum + p.total, 0);
+  const overallProportion = totalSuccesses / totalSample;
+  
+  // Expected frequencies
+  const expected = proportions.map(p => ({
+    expectedSuccesses: p.total * overallProportion,
+    expectedFailures: p.total * (1 - overallProportion)
+  }));
+  
+  // Chi-square statistic
+  let chiSquare = 0;
+  proportions.forEach((p, i) => {
+    chiSquare += Math.pow(p.successes - expected[i].expectedSuccesses, 2) / expected[i].expectedSuccesses;
+    chiSquare += Math.pow(p.failures - expected[i].expectedFailures, 2) / expected[i].expectedFailures;
+  });
+  
+  const df = k - 1;
+  const pValue = getChiSquarePValue(chiSquare, df);
+  const isSignificant = pValue < alpha;
+  
+  // Effect size - Cramér's V
+  const cramersV = Math.sqrt(chiSquare / (totalSample * (k - 1)));
+  
+  // Odds ratios for 2x2 tables
+  let oddsRatio = null;
+  let riskRatio = null;
+  if (k === 2) {
+    const [group1, group2] = proportions;
+    oddsRatio = (group1.successes * group2.failures) / (group1.failures * group2.successes);
+    riskRatio = group1.proportion / group2.proportion;
+  }
+  
+  const interpretationData = generateProportionInterpretation(
+    isSignificant,
+    pValue,
+    alpha,
+    {
+      proportions,
+      chiSquare,
+      df,
+      cramersV,
+      oddsRatio,
+      riskRatio,
+      successCategory,
+      totalSample
+    }
+  );
+  
+  return {
+    testType: "chi-square",
+    testUsed: "Chi-square test of independence",
+    proportions,
+    chiSquare,
+    df,
+    pValue,
+    isSignificant,
+    alpha,
+    cramersV,
+    oddsRatio,
+    riskRatio,
+    totalSample,
+    headline: interpretationData.headline,
+    technicalDescription: interpretationData.technicalDescription
+  };
+}
+
+function getChiSquarePValue(chiSquare: number, df: number): number {
+  // Simplified chi-square p-value calculation
+  // This is an approximation - in practice you'd use a proper statistical library
+  
+  // Critical values for common scenarios
+  const criticalValues: { [key: number]: { [key: number]: number } } = {
+    1: { 0.05: 3.841, 0.01: 6.635, 0.001: 10.828 },
+    2: { 0.05: 5.991, 0.01: 9.210, 0.001: 13.816 },
+    3: { 0.05: 7.815, 0.01: 11.345, 0.001: 16.266 },
+    4: { 0.05: 9.488, 0.01: 13.277, 0.001: 18.467 }
+  };
+  
+  const dfToUse = Math.min(df, 4);
+  if (chiSquare >= (criticalValues[dfToUse]?.[0.001] || 10)) return 0.001;
+  if (chiSquare >= (criticalValues[dfToUse]?.[0.01] || 6)) return 0.01;
+  if (chiSquare >= (criticalValues[dfToUse]?.[0.05] || 4)) return 0.05;
+  
+  // Rough approximation for other values
+  return Math.max(0.05, Math.min(0.9, Math.exp(-chiSquare * 0.5)));
+}
+
+function generateProportionInterpretation(
+  isSignificant: boolean,
+  pValue: number,
+  alpha: number,
+  stats: any
+): { headline: string; technicalDescription: string } {
+  const { proportions, chiSquare, df, cramersV, oddsRatio, riskRatio, successCategory } = stats;
+  
+  const effectDesc = cramersV < 0.1 ? "small" : 
+                    cramersV < 0.3 ? "medium" : "large";
+  
+  const proportionSummary = proportions.map(p => 
+    `${p.groupName.replace(/_/g, ' ')}: ${(p.proportion * 100).toFixed(1)}% ${successCategory.toLowerCase()} (${p.successes} out of ${p.total})`
+  ).join(', ');
+  
+  let headline = "";
+  if (isSignificant) {
+    if (proportions.length === 2) {
+      const diff = Math.abs(proportions[0].proportion - proportions[1].proportion) * 100;
+      headline = `The success rates differ significantly between groups: ${proportionSummary} (${diff.toFixed(1)} percentage point difference).`;
+    } else {
+      headline = `The success rates differ significantly across groups: ${proportionSummary}.`;
+    }
+  } else {
+    headline = `The success rates are similar across groups: ${proportionSummary}.`;
+  }
+  
+  let technicalDescription = `Test used: Chi-square test of independence
+χ² statistic = ${chiSquare.toFixed(3)}
+p-value = ${pValue.toFixed(4)}
+Significance level (α) = ${alpha}
+Degrees of freedom = ${df}
+Effect size (Cramér's V) = ${cramersV.toFixed(3)} (${effectDesc} effect)`;
+
+  if (oddsRatio !== null && riskRatio !== null) {
+    technicalDescription += `
+Odds ratio = ${oddsRatio.toFixed(3)}
+Risk ratio = ${riskRatio.toFixed(3)}`;
+  }
+  
+  technicalDescription += `
+${isSignificant ? `The differences in success rates are statistically significant and unlikely to be due to random variation.` : `These differences could reasonably be due to random variation rather than true group differences.`}`;
+  
+  return { headline, technicalDescription };
+}

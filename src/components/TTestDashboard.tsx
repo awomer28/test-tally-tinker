@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import TTestVisualization from "./TTestVisualization";
-import { calculateOneSampleTTest, calculateTwoSampleTTest, calculatePairedTTest, calculateANOVA } from "@/utils/tTestCalculations";
+import { calculateOneSampleTTest, calculateTwoSampleTTest, calculatePairedTTest, calculateANOVA, calculateChiSquareTest } from "@/utils/tTestCalculations";
 
 const TTestDashboard = () => {
   const [comparisonType, setComparisonType] = useState("compare-groups");
@@ -91,16 +91,33 @@ const TTestDashboard = () => {
         const data2 = generateMockData(selectedVariables[1]);
         testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative, statistic);
       } else if (comparisonType === "compare-groups" && groupingVariable && outcomeVariable) {
-        const groupData = generateGroupData(groupingVariable, outcomeVariable);
-        const groups = groupData.map(g => g.data);
-        const groupNames = groupData.map(g => g.groupName);
-        
-        if (groups.length === 2) {
-          testResults = calculateTwoSampleTTest(groups[0], groups[1], parseFloat(alpha), alternative, true, statistic, groupNames);
+        if (statisticType === "proportion") {
+          // Generate mock proportion data
+          const groups = groupingVariable === "Gender" ? ["Male", "Female"] :
+                        groupingVariable === "School_District" ? ["North", "South", "East"] :
+                        groupingVariable === "Treatment_Group" ? ["Control", "Treatment"] :
+                        ["Group_A", "Group_B"];
+          
+          const proportionData = groups.map(groupName => {
+            const total = Math.floor(Math.random() * 50) + 150; // 150-200 total
+            const successRate = 0.6 + Math.random() * 0.3; // 60-90% success rate
+            const successes = Math.floor(total * successRate);
+            return { groupName, successes, total };
+          });
+          
+          testResults = calculateChiSquareTest(proportionData, parseFloat(alpha), successCategory || "success");
         } else {
-          // ANOVA for multiple groups
-          testResults = calculateANOVA(groups, parseFloat(alpha), statistic, groupNames);
-          testResults.testType = "anova";
+          const groupData = generateGroupData(groupingVariable, outcomeVariable);
+          const groups = groupData.map(g => g.data);
+          const groupNames = groupData.map(g => g.groupName);
+          
+          if (groups.length === 2) {
+            testResults = calculateTwoSampleTTest(groups[0], groups[1], parseFloat(alpha), alternative, true, statistic, groupNames);
+          } else {
+            // ANOVA for multiple groups
+            testResults = calculateANOVA(groups, parseFloat(alpha), statistic, groupNames);
+            testResults.testType = "anova";
+          }
         }
       }
       
@@ -535,43 +552,76 @@ const TTestDashboard = () => {
                     </>
                   )}
                   
-                   {comparisonType === "compare-groups" && results.testType === "anova" && (
+                   {comparisonType === "compare-groups" && results.testType === "chi-square" && (
                      <>
-                       <Tooltip>
-                         <TooltipTrigger asChild>
-                           <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
-                             <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
-                             <div className="text-sm text-muted-foreground">Groups compared</div>
-                           </div>
-                         </TooltipTrigger>
-                         <TooltipContent>
-                           <p>Number of different groups in the analysis</p>
-                         </TooltipContent>
-                       </Tooltip>
-                       <Tooltip>
-                         <TooltipTrigger asChild>
-                           <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
-                             <div className="text-2xl font-bold text-secondary-foreground">{results.fStatistic?.toFixed(2)}</div>
-                             <div className="text-sm text-muted-foreground">F-statistic</div>
-                           </div>
-                         </TooltipTrigger>
-                         <TooltipContent>
-                           <p>Test statistic comparing variance between groups to variance within groups</p>
-                         </TooltipContent>
-                       </Tooltip>
-                       <Tooltip>
-                         <TooltipTrigger asChild>
-                           <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
-                             <div className="text-2xl font-bold text-accent-foreground">{results.etaSquared?.toFixed(3)}</div>
-                             <div className="text-sm text-muted-foreground">Effect size (η²)</div>
-                           </div>
-                         </TooltipTrigger>
-                         <TooltipContent>
-                           <p>Proportion of total variance explained by group differences (eta-squared)</p>
-                         </TooltipContent>
-                       </Tooltip>
+                       {results.proportions?.map((prop, index) => (
+                         <Tooltip key={index}>
+                           <TooltipTrigger asChild>
+                             <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                               <div className="text-2xl font-bold text-primary">{(prop.proportion * 100).toFixed(1)}%</div>
+                               <div className="text-sm text-muted-foreground">{prop.groupName.replace(/_/g, ' ')}: {prop.successes} of {prop.total}</div>
+                             </div>
+                           </TooltipTrigger>
+                           <TooltipContent>
+                             <p>Success rate for {prop.groupName.replace(/_/g, ' ')}</p>
+                           </TooltipContent>
+                         </Tooltip>
+                       ))}
+                       {results.proportions?.length === 2 && (
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
+                                <div className="text-2xl font-bold text-accent-foreground">
+                                  {(Math.abs(results.proportions[0].proportion - results.proportions[1].proportion) * 100).toFixed(1)}pp
+                                </div>
+                               <div className="text-sm text-muted-foreground">Percentage point difference</div>
+                             </div>
+                           </TooltipTrigger>
+                           <TooltipContent>
+                             <p>Difference in success rates between groups</p>
+                           </TooltipContent>
+                         </Tooltip>
+                       )}
                      </>
                    )}
+
+                   {comparisonType === "compare-groups" && results.testType === "anova" && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                              <div className="text-2xl font-bold text-primary">{results.groupMeans?.length}</div>
+                              <div className="text-sm text-muted-foreground">Groups compared</div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Number of different groups in the analysis</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                              <div className="text-2xl font-bold text-secondary-foreground">{results.fStatistic?.toFixed(2)}</div>
+                              <div className="text-sm text-muted-foreground">F-statistic</div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Test statistic comparing variance between groups to variance within groups</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
+                              <div className="text-2xl font-bold text-accent-foreground">{results.etaSquared?.toFixed(3)}</div>
+                              <div className="text-sm text-muted-foreground">Effect size (η²)</div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Proportion of total variance explained by group differences (eta-squared)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
+                    )}
 
                    {comparisonType === "compare-groups" && results.testType !== "anova" && (
                     <>
@@ -691,6 +741,11 @@ const TTestDashboard = () => {
                         Math.abs(results.effectSize) < 0.8 ? "medium to large" : "large"
                       } practical difference.`}
                       {results.etaSquared && `The analysis explains ${(results.etaSquared * 100).toFixed(1)}% of the variance in the outcome variable.`}
+                      {results.cramersV && `The effect size (Cramér's V = ${results.cramersV.toFixed(3)}) indicates a ${
+                        results.cramersV < 0.1 ? "small" :
+                        results.cramersV < 0.3 ? "medium" : "large"
+                      } association between variables.`}
+                      {results.oddsRatio && results.riskRatio && ` The odds ratio (${results.oddsRatio.toFixed(2)}) and risk ratio (${results.riskRatio.toFixed(2)}) quantify the practical difference between groups.`}
                     </p>
                   </div>
                 </div>
@@ -700,7 +755,7 @@ const TTestDashboard = () => {
                   <h3 className="font-semibold text-foreground mb-2">Technical Details</h3>
                   <div className="text-sm leading-relaxed whitespace-pre-line space-y-2">
                     <div>{results.technicalDescription}</div>
-                    {results.confidenceInterval && (
+                    {results.confidenceInterval && !results.testType?.includes("chi-square") && (
                       <div className="mt-3 pt-3 border-t border-border">
                         <p><strong>Confidence Interval ({(1 - results.alpha) * 100}%):</strong></p>
                         <p>[{results.confidenceInterval[0].toFixed(3)}, {results.confidenceInterval[1].toFixed(3)}]</p>
