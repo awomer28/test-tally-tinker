@@ -1,9 +1,9 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, XAxis, YAxis, Area, AreaChart, ReferenceLine, Tooltip, BarChart, Bar } from "recharts";
 import { useMemo } from "react";
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PairedLineChart from "./PairedLineChart";
 
 interface TTestVisualizationProps {
   results: any;
@@ -11,9 +11,19 @@ interface TTestVisualizationProps {
   groupingVariable?: string;
   outcomeVariable?: string;
   successCategory?: string;
+  beforeData?: number[];
+  afterData?: number[];
 }
 
-const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariable, successCategory }: TTestVisualizationProps) => {
+const TTestVisualization = ({ 
+  results, 
+  testType, 
+  groupingVariable, 
+  outcomeVariable, 
+  successCategory,
+  beforeData,
+  afterData 
+}: TTestVisualizationProps) => {
   // Add null checks to prevent errors
   if (!results || typeof results !== 'object') {
     return <div>No visualization data available</div>;
@@ -25,6 +35,43 @@ const TTestVisualization = ({ results, testType, groupingVariable, outcomeVariab
   // Debug logging for chart data
   console.log("actualTestType:", actualTestType);
   console.log("results:", results);
+
+  // For paired tests, show the new paired line chart
+  if (actualTestType === "paired" && beforeData && afterData) {
+    return (
+      <div className="space-y-6">
+        <PairedLineChart 
+          beforeData={beforeData}
+          afterData={afterData}
+          results={results}
+        />
+        
+        {results.confidenceInterval && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {(1 - results.alpha) * 100}% Confidence Interval for Mean Change
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This interval shows the range where the true population change likely falls. 
+                We're {(1 - results.alpha) * 100}% confident the true change is within this range.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <div className="text-lg font-mono mb-2">
+                  [{results.confidenceInterval?.[0]?.toFixed?.(3) || 'N/A'}, {results.confidenceInterval?.[1]?.toFixed?.(3) || 'N/A'}]
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Mean change: {results.meanDifference?.toFixed(2) || 'N/A'}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
 
   const distributionData = useMemo(() => {
     const points = [];

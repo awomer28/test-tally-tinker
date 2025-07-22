@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Info } from "lucide-react";
 import TTestVisualization from "./TTestVisualization";
 import { calculatePairedTTest } from "@/utils/tTestCalculations";
@@ -30,6 +31,14 @@ const PairedTest = () => {
       console.log("Error calculating paired t-test:", error);
     }
   }, [beforeData, afterData, alpha, alternative]);
+
+  const getEffectSizeLabel = (effectSize) => {
+    const absEffect = Math.abs(effectSize);
+    if (absEffect < 0.2) return "Small";
+    if (absEffect < 0.5) return "Medium";
+    if (absEffect < 0.8) return "Large";
+    return "Very Large";
+  };
 
   return (
     <div className="space-y-6">
@@ -128,51 +137,66 @@ const PairedTest = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  Results
+                  Statistical Results
                   <Badge variant={results.isSignificant ? "destructive" : "secondary"}>
-                    {results.isSignificant ? "Statistically Significant Change" : "No Significant Change"}
+                    {results.isSignificant ? "Statistically Significant" : "Not Significant"}
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <span className="font-medium text-blue-900">Average Change:</span>
-                    <div className="text-xl font-mono text-blue-800">
-                      {results.meanDifference > 0 ? '+' : ''}{results.meanDifference.toFixed(2)}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <span className="font-medium text-green-900">Number of Pairs:</span>
-                    <div className="text-xl font-mono text-green-800">{results.n}</div>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium">Effect Size:</span>
-                    <div className="text-xl font-mono">{results.effectSize.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {Math.abs(results.effectSize) < 0.2 ? "Small" : 
-                       Math.abs(results.effectSize) < 0.5 ? "Medium" : "Large"} effect
-                    </div>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium">Direction:</span>
-                    <div className="text-lg">
-                      {results.meanDifference > 0 ? "📈 Increase" : 
-                       results.meanDifference < 0 ? "📉 Decrease" : "➡️ No change"}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="font-semibold mb-2">What does this mean?</h4>
-                  <p className="text-sm leading-relaxed">
-                    {results.interpretation}
-                  </p>
-                </div>
-
-                <div className="text-xs text-muted-foreground">
-                  p-value: {results.pValue.toFixed(4)}
-                </div>
+              <CardContent>
+                <Table>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">Test Used</TableCell>
+                      <TableCell>Paired samples t-test</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Sample Size</TableCell>
+                      <TableCell>n = {results.n} pairs</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Mean Before</TableCell>
+                      <TableCell>{results.meanBefore?.toFixed(2) || 'N/A'}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Mean After</TableCell>
+                      <TableCell>{results.meanAfter?.toFixed(2) || 'N/A'}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Mean Change</TableCell>
+                      <TableCell>
+                        <span className={results.meanDifference > 0 ? "text-green-600" : results.meanDifference < 0 ? "text-red-600" : ""}>
+                          {results.meanDifference > 0 ? '+' : ''}{results.meanDifference.toFixed(2)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">t-statistic</TableCell>
+                      <TableCell>{results.tStatistic?.toFixed(3) || 'N/A'}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">p-value</TableCell>
+                      <TableCell>{results.pValue?.toFixed(4) || 'N/A'}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Effect Size (Cohen's d)</TableCell>
+                      <TableCell>
+                        {results.effectSize?.toFixed(2) || 'N/A'} 
+                        {results.effectSize && (
+                          <span className="text-sm text-muted-foreground ml-1">
+                            ({getEffectSizeLabel(results.effectSize)} effect)
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">95% Confidence Interval</TableCell>
+                      <TableCell>
+                        [{results.confidenceInterval?.[0]?.toFixed(3) || 'N/A'}, {results.confidenceInterval?.[1]?.toFixed(3) || 'N/A'}]
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           )}
@@ -183,6 +207,8 @@ const PairedTest = () => {
             <TTestVisualization 
               results={results}
               testType="paired"
+              beforeData={beforeData.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x))}
+              afterData={afterData.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x))}
             />
           )}
         </div>
