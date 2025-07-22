@@ -40,7 +40,7 @@ const PairedLineChart = ({ beforeData, afterData, results }: PairedLineChartProp
   ];
 
   // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length > 0) {
       const timePoint = label;
       const meanValue = payload.find(p => p.dataKey === 'mean')?.value;
