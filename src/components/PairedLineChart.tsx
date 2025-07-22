@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PairedLineChartProps {
@@ -25,17 +25,26 @@ const PairedLineChart = ({ beforeData, afterData, results }: PairedLineChartProp
     };
   });
 
-  // Create chart data with two time points
+  // Create chart data with Before and After as separate x-axis points
+  // Each participant gets their own property in the data
   const chartData = [
     {
       timePoint: 'Before',
-      individual: participantData.map(p => ({ participant: p.participant, value: p.before, change: p.change })),
-      mean: results.meanBefore || 0
+      mean: results.meanBefore || 0,
+      ...participantData.reduce((acc, p) => {
+        acc[`participant_${p.participant}`] = p.before;
+        acc[`participant_${p.participant}_change`] = p.change;
+        return acc;
+      }, {} as any)
     },
     {
-      timePoint: 'After', 
-      individual: participantData.map(p => ({ participant: p.participant, value: p.after, change: p.change })),
-      mean: results.meanAfter || 0
+      timePoint: 'After',
+      mean: results.meanAfter || 0,
+      ...participantData.reduce((acc, p) => {
+        acc[`participant_${p.participant}`] = p.after;
+        acc[`participant_${p.participant}_change`] = p.change;
+        return acc;
+      }, {} as any)
     }
   ];
 
@@ -62,12 +71,6 @@ const PairedLineChart = ({ beforeData, afterData, results }: PairedLineChartProp
     }
     return null;
   };
-
-  // Generate individual lines data for rendering
-  const individualLines = participantData.map(participant => [
-    { timePoint: 'Before', value: participant.before },
-    { timePoint: 'After', value: participant.after }
-  ]);
 
   // Calculate Y-axis domain with some padding
   const allValues = [...beforeData, ...afterData];
@@ -103,8 +106,7 @@ const PairedLineChart = ({ beforeData, afterData, results }: PairedLineChartProp
             />
             
             {/* Individual participant lines */}
-            {individualLines.map((lineData, index) => {
-              const participant = participantData[index];
+            {participantData.map((participant, index) => {
               let strokeColor = '#94a3b8'; // gray for no change
               
               if (participant.improved) {
@@ -116,13 +118,13 @@ const PairedLineChart = ({ beforeData, afterData, results }: PairedLineChartProp
               return (
                 <Line
                   key={`participant-${index}`}
-                  data={lineData}
-                  dataKey="value"
+                  dataKey={`participant_${participant.participant}`}
                   stroke={strokeColor}
                   strokeWidth={1.5}
                   strokeOpacity={0.7}
                   dot={{ r: 3, fill: strokeColor, strokeWidth: 0 }}
                   activeDot={{ r: 4, stroke: strokeColor, strokeWidth: 2, fill: 'white' }}
+                  connectNulls={false}
                 />
               );
             })}
