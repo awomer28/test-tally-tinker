@@ -310,12 +310,9 @@ const TTestDashboard = () => {
                           </>
                         ) : (
                         <>
-                          <div>
-                            <Label className="text-base font-medium">How are your groups defined?</Label>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Choose the categorical variable that divides your data into groups
-                            </p>
-                            <Select value={groupingVariable} onValueChange={setGroupingVariable}>
+                           <div>
+                             <Label className="text-base font-medium">How are your groups defined?</Label>
+                             <Select value={groupingVariable} onValueChange={setGroupingVariable}>
                               <SelectTrigger className="mt-2">
                                 <SelectValue placeholder="Choose a categorical variable (e.g., Gender, Treatment Group, Region)" />
                               </SelectTrigger>
@@ -328,12 +325,9 @@ const TTestDashboard = () => {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div>
-                            <Label className="text-base font-medium">What do you want to measure?</Label>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Choose the numerical variable you want to compare across groups
-                            </p>
-                            <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
+                           <div>
+                             <Label className="text-base font-medium">What do you want to measure?</Label>
+                             <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
                               <SelectTrigger className="mt-2">
                                 <SelectValue placeholder="Choose a numerical variable (e.g., Test Score, Income, Age)" />
                               </SelectTrigger>
@@ -468,16 +462,6 @@ const TTestDashboard = () => {
                 Run analysis
               </Button>
 
-              {/* Info Alert */}
-              <Alert>
-                <Info className="h-4 w-4" />
-                 <AlertDescription>
-                   {comparisonType === "compare-to-target" && "Compare your variable's average to a specific target or benchmark value."}
-                   {comparisonType === "compare-before-after" && "Analyze changes in the same subjects measured at two different times."}
-                   {comparisonType === "compare-groups" && `Compare average ${outcomeVariable ? outcomeVariable.replace(/_/g, ' ').toLowerCase() : 'values'} between different ${groupingVariable ? groupingVariable.replace(/_/g, ' ').toLowerCase() : 'groups'} (e.g., compare average test scores between male vs female students).`}
-                   {comparisonType === "compare-different-variables" && "Compare different variables or metrics from your dataset."}
-                 </AlertDescription>
-              </Alert>
             </CardContent>
           </Card>
         </div>
