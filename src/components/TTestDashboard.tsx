@@ -350,7 +350,7 @@ const TTestDashboard = () => {
                         <div className="flex-1">
                           <Label className="text-base font-medium">
                             {comparisonType === "compare-before-after" ? 
-                              (index === 0 ? "Before/baseline variable" : "After/follow-up variable") :
+                              (index === 0 ? "Before variable" : "After variable") :
                               `${index === 0 ? "First" : index === 1 ? "Second" : `Group ${index + 1}`} group variable`
                             }
                           </Label>
