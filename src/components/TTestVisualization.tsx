@@ -36,15 +36,9 @@ const TTestVisualization = ({
   console.log("actualTestType:", actualTestType);
   console.log("results:", results);
 
-  // For paired tests, show no charts for now
-  if (actualTestType === "paired" && beforeData && afterData) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center text-muted-foreground py-8">
-          Charts temporarily removed
-        </div>
-      </div>
-    );
+  // For paired tests, show no visualization
+  if (actualTestType === "paired") {
+    return null;
   }
 
   const distributionData = useMemo(() => {
