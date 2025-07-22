@@ -36,39 +36,13 @@ const TTestVisualization = ({
   console.log("actualTestType:", actualTestType);
   console.log("results:", results);
 
-  // For paired tests, show the new paired line chart
+  // For paired tests, show no charts for now
   if (actualTestType === "paired" && beforeData && afterData) {
     return (
       <div className="space-y-6">
-        <PairedLineChart 
-          beforeData={beforeData}
-          afterData={afterData}
-          results={results}
-        />
-        
-        {results.confidenceInterval && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {(1 - results.alpha) * 100}% Confidence Interval for Mean Change
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                This interval shows the range where the true population change likely falls. 
-                We're {(1 - results.alpha) * 100}% confident the true change is within this range.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center">
-                <div className="text-lg font-mono mb-2">
-                  [{results.confidenceInterval?.[0]?.toFixed?.(3) || 'N/A'}, {results.confidenceInterval?.[1]?.toFixed?.(3) || 'N/A'}]
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Mean change: {results.meanDifference?.toFixed(2) || 'N/A'}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <div className="text-center text-muted-foreground py-8">
+          Charts temporarily removed
+        </div>
       </div>
     );
   }
