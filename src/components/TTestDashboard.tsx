@@ -92,9 +92,16 @@ const TTestDashboard = () => {
         testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative, statistic);
       } else if (comparisonType === "compare-different-variables" && selectedVariables.filter(v => v).length >= 2) {
         const filteredVars = selectedVariables.filter(v => v);
-        const data1 = generateMockData(filteredVars[0]);
-        const data2 = generateMockData(filteredVars[1]);
-        testResults = calculateTwoSampleTTest(data1, data2, parseFloat(alpha), alternative, true, statisticType, filteredVars);
+        if (filteredVars.length === 2) {
+          const data1 = generateMockData(filteredVars[0]);
+          const data2 = generateMockData(filteredVars[1]);
+          testResults = calculateTwoSampleTTest(data1, data2, parseFloat(alpha), alternative, true, statisticType, filteredVars);
+        } else {
+          // Use ANOVA for 3+ variables
+          const groups = filteredVars.map(variable => generateMockData(variable));
+          testResults = calculateANOVA(groups, parseFloat(alpha), statisticType, filteredVars);
+          testResults.testType = "anova";
+        }
       } else if (comparisonType === "compare-groups" && groupingVariable && outcomeVariable) {
         if (statisticType === "proportion") {
           // Generate mock proportion data
@@ -375,29 +382,29 @@ const TTestDashboard = () => {
                              </SelectContent>
                           </Select>
                         </div>
-                         {comparisonType === "compare-groups" && selectedVariables.length > 2 && (
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={() => removeVariable(index)}
-                             className="mt-6"
-                           >
-                             Remove
-                           </Button>
-                         )}
+                          {(comparisonType === "compare-groups" || comparisonType === "compare-different-variables") && selectedVariables.length > 2 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeVariable(index)}
+                              className="mt-6"
+                            >
+                              Remove
+                            </Button>
+                          )}
                        </div>
                      ))}
                      
-                     {comparisonType === "compare-groups" && (
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         onClick={addVariable}
-                         className="w-full"
-                       >
-                         + Add group
-                       </Button>
-                     )}
+                      {(comparisonType === "compare-groups" || comparisonType === "compare-different-variables") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={addVariable}
+                          className="w-full"
+                        >
+                          + Add {comparisonType === "compare-groups" ? "group" : "variable"}
+                        </Button>
+                      )}
                   </div>
                 )}
 
@@ -443,21 +450,26 @@ const TTestDashboard = () => {
                         <SelectItem value="two-sided">
                           {comparisonType === "compare-to-target" ? "Is there any difference from target?" :
                            comparisonType === "compare-before-after" ? "Is there any change?" :
-                           comparisonType === "compare-different-variables" ? `Are these variables ${statisticType === 'mean' ? 'averages' : statisticType === 'median' ? 'medians' : 'variances'} different?` :
+                           comparisonType === "compare-different-variables" ? `Are these variables' ${statisticType === 'mean' ? 'averages' : statisticType === 'median' ? 'medians' : 'variances'} different?` :
                            "Are the groups different?"}
                         </SelectItem>
-                        <SelectItem value="greater">
-                          {comparisonType === "compare-to-target" ? "Is the variable higher than target?" :
-                           comparisonType === "compare-before-after" ? "Did values increase?" :
-                           comparisonType === "compare-different-variables" ? `Is first variable ${statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} higher?` :
-                           "Is first group higher?"}
-                        </SelectItem>
-                        <SelectItem value="less">
-                          {comparisonType === "compare-to-target" ? "Is the variable lower than target?" :
-                           comparisonType === "compare-before-after" ? "Did values decrease?" :
-                           comparisonType === "compare-different-variables" ? `Is first variable ${statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} lower?` :
-                           "Is first group lower?"}
-                        </SelectItem>
+                        {/* Only show greater/less options for 2-variable comparisons */}
+                        {!(comparisonType === "compare-different-variables" && selectedVariables.filter(v => v).length > 2) && (
+                          <>
+                            <SelectItem value="greater">
+                              {comparisonType === "compare-to-target" ? "Is the variable higher than target?" :
+                               comparisonType === "compare-before-after" ? "Did values increase?" :
+                               comparisonType === "compare-different-variables" ? `Is first variable's ${statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} higher?` :
+                               "Is first group higher?"}
+                            </SelectItem>
+                            <SelectItem value="less">
+                              {comparisonType === "compare-to-target" ? "Is the variable lower than target?" :
+                               comparisonType === "compare-before-after" ? "Did values decrease?" :
+                               comparisonType === "compare-different-variables" ? `Is first variable's ${statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} lower?` :
+                               "Is first group lower?"}
+                            </SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
