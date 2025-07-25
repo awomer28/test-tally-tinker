@@ -90,6 +90,11 @@ const TTestDashboard = () => {
         const data1 = generateMockData(selectedVariables[0]);
         const data2 = generateMockData(selectedVariables[1]);
         testResults = calculatePairedTTest(data1, data2, parseFloat(alpha), alternative, statistic);
+      } else if (comparisonType === "compare-different-variables" && selectedVariables.filter(v => v).length >= 2) {
+        const filteredVars = selectedVariables.filter(v => v);
+        const data1 = generateMockData(filteredVars[0]);
+        const data2 = generateMockData(filteredVars[1]);
+        testResults = calculateTwoSampleTTest(data1, data2, parseFloat(alpha), alternative, true, "mean", filteredVars);
       } else if (comparisonType === "compare-groups" && groupingVariable && outcomeVariable) {
         if (statisticType === "proportion") {
           // Generate mock proportion data
@@ -143,6 +148,7 @@ const TTestDashboard = () => {
   const isReadyToAnalyze = () => {
     if (comparisonType === "compare-to-target") return selectedVariables[0] && targetValue;
     if (comparisonType === "compare-before-after") return selectedVariables[0] && selectedVariables[1];
+    if (comparisonType === "compare-different-variables") return selectedVariables.filter(v => v).length >= 2;
     if (comparisonType === "compare-groups") {
       if (statisticType === "proportion") {
         return groupingVariable && outcomeVariable && successCategory;
