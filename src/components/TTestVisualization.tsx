@@ -41,30 +41,6 @@ const TTestVisualization = ({
     return null;
   }
 
-  const distributionData = useMemo(() => {
-    const points = [];
-    const { tStatistic, df, criticalValue, alternative } = results;
-    
-    // Add safety checks for required values
-    if (tStatistic === undefined || df === undefined || criticalValue === undefined) {
-      return [];
-    }
-    
-    // Generate t-distribution curve
-    for (let x = -5; x <= 5; x += 0.1) {
-      const y = tDistributionPDF(x, df);
-      points.push({
-        x: x,
-        y: y,
-        density: y,
-        isSignificant: isInCriticalRegion(x, criticalValue, alternative),
-        isTestStatistic: Math.abs(x - tStatistic) < 0.05
-      });
-    }
-    
-    return points;
-  }, [results]);
-
   const confidenceData = useMemo(() => {
     if (!results.confidenceInterval) return [];
     
@@ -176,37 +152,6 @@ const TTestVisualization = ({
     return [];
   }, [results, actualTestType]);
 
-  // Create contingency table data for chi-square tests
-  const contingencyData = useMemo(() => {
-    if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
-      // Create a 2x2 contingency table from proportions data
-      const data = [];
-      const successLabel = successCategory?.replace(/_/g, ' ') || 'Success';
-      const failureLabel = successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure';
-      
-      results.proportions.forEach((proportion, index) => {
-        // Success column
-        data.push({
-          row: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
-          col: successLabel,
-          value: proportion.successes,
-          expected: 0, // Will be calculated if needed
-          contribution: 0 // Will be calculated if needed
-        });
-        // Failure column
-        data.push({
-          row: proportion.group?.replace(/_/g, ' ') || `Group ${index + 1}`,
-          col: failureLabel,
-          value: proportion.total - proportion.successes,
-          expected: 0,
-          contribution: 0
-        });
-      });
-      return data;
-    }
-    return [];
-  }, [results, actualTestType, successCategory]);
-
   const outcomeRatesData = useMemo(() => {
     if (actualTestType === "chi-square" && results.proportions && Array.isArray(results.proportions)) {
       return results.proportions.map((proportion, index) => ({
@@ -252,23 +197,20 @@ const TTestVisualization = ({
   // Debug logging for chart data arrays
   console.log("outcomeRatesData:", outcomeRatesData);
   console.log("groupBreakdownData:", groupBreakdownData);
-  console.log("contingencyData:", contingencyData);
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue={actualTestType === "chi-square" ? "rates" : "distribution"} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue={actualTestType === "chi-square" ? "rates" : "distributions"} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
           {actualTestType === "chi-square" ? (
             <>
               <TabsTrigger value="rates">Outcome Rates Comparison</TabsTrigger>
               <TabsTrigger value="breakdown">Group Breakdown</TabsTrigger>
-              <TabsTrigger value="contingency">Contingency Table Visualization</TabsTrigger>
             </>
           ) : (
             <>
-              <TabsTrigger value="distribution">Statistical Distribution</TabsTrigger>
-              <TabsTrigger value="comparison">Group Comparison</TabsTrigger>
               <TabsTrigger value="distributions">Group Distributions</TabsTrigger>
+              <TabsTrigger value="comparison">Group Comparison</TabsTrigger>
             </>
           )}
         </TabsList>
@@ -383,188 +325,6 @@ const TTestVisualization = ({
           </Card>
         </TabsContent>
 
-        <TabsContent value="contingency">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {outcomeVariable?.replace(/_/g, ' ') || 'Outcome'} by {groupingVariable?.replace(/_/g, ' ') || 'Group'} Table
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                This table shows the counts and percentages for each combination of {groupingVariable?.replace(/_/g, ' ').toLowerCase() || 'group'} and {outcomeVariable?.replace(/_/g, ' ').toLowerCase() || 'outcome'}.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Contingency table as a visual grid */}
-                {contingencyData.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2 max-w-md mx-auto">
-                    <div className="text-center font-semibold text-sm"></div>
-                    <div className="text-center font-semibold text-sm p-2">
-                      {successCategory?.replace(/_/g, ' ') || 'Success'}
-                    </div>
-                    <div className="text-center font-semibold text-sm p-2">
-                      {successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure'}
-                    </div>
-                    {results.proportions?.map((proportion, rowIndex) => (
-                      <React.Fragment key={`row-${rowIndex}`}>
-                        <div className="text-center font-semibold text-sm p-2">
-                          {proportion.groupName?.replace(/_/g, ' ') || proportion.group?.replace(/_/g, ' ') || `Group ${rowIndex + 1}`}
-                        </div>
-                        <div className="text-center p-4 border rounded text-sm font-medium bg-green-200 border-green-300">
-                          <div className="font-bold text-green-800">{proportion.successes}</div>
-                          <div className="text-xs text-green-600">
-                            {((proportion.successes / proportion.total) * 100).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="text-center p-4 border rounded text-sm font-medium bg-red-200 border-red-300">
-                          <div className="font-bold text-red-800">{proportion.total - proportion.successes}</div>
-                          <div className="text-xs text-red-600">
-                            {(((proportion.total - proportion.successes) / proportion.total) * 100).toFixed(1)}%
-                          </div>
-                        </div>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    No contingency table data available
-                  </div>
-                )}
-                <div className="text-center text-xs text-muted-foreground">
-                  Green = {successCategory?.replace(/_/g, ' ') || 'Success'}, Red = {successCategory ? `Not ${successCategory.replace(/_/g, ' ')}` : 'Failure'}. Numbers show counts and percentages.
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="distribution">
-          <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">T-Distribution & Critical Region</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            This chart shows the theoretical distribution and where your test statistic falls. 
-            The colored areas represent critical regions where results would be considered statistically significant.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={distributionData}>
-              <defs>
-                <linearGradient id="distributionGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                </linearGradient>
-                <linearGradient id="criticalGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1}/>
-                </linearGradient>
-              </defs>
-              <XAxis 
-                dataKey="x" 
-                type="number" 
-                scale="linear"
-                domain={[-5, 5]}
-                tickFormatter={(value) => value.toFixed(1)}
-              />
-              <YAxis hide />
-              <Area 
-                type="monotone" 
-                dataKey="density" 
-                stroke="#3b82f6" 
-                fill="url(#distributionGradient)"
-                strokeWidth={2}
-              />
-              {results.tStatistic !== undefined && (
-                <ReferenceLine 
-                  x={results.tStatistic} 
-                  stroke="#10b981" 
-                  strokeWidth={3}
-                  strokeDasharray="5 5"
-                  label={{ value: `t = ${results.tStatistic.toFixed(2)}`, position: "top" }}
-                />
-              )}
-              {results.alternative === "two-sided" && results.criticalValue !== undefined && (
-                <>
-                  <ReferenceLine 
-                    x={results.criticalValue} 
-                    stroke="#ef4444" 
-                    strokeWidth={2}
-                    label={{ value: `+${results.criticalValue.toFixed(2)}`, position: "top" }}
-                  />
-                  <ReferenceLine 
-                    x={-results.criticalValue} 
-                    stroke="#ef4444" 
-                    strokeWidth={2}
-                    label={{ value: `-${results.criticalValue.toFixed(2)}`, position: "top" }}
-                  />
-                </>
-              )}
-              <Tooltip 
-                formatter={(value: any, name: string) => [
-                  `${typeof value === 'number' ? value.toFixed(4) : value}`, 
-                  name === 'density' ? 'Probability Density' : name
-                ]}
-                labelFormatter={(value) => `t = ${typeof value === 'number' ? value.toFixed(2) : value}`}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-          <div className="mt-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                <span>Distribution</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <span>Test Statistic</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded"></div>
-                <span>Critical Value(s)</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-        </TabsContent>
-        
-        <TabsContent value="comparison">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Group Comparison</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                This chart compares the average values across your selected groups. 
-                The height of each bar represents the group's average value.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={groupComparisonData}>
-                  <XAxis 
-                    dataKey="group" 
-                    tick={{ fontSize: 12 }}
-                    interval={0}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis />
-                  <Bar 
-                    dataKey="value" 
-                    fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Tooltip 
-                    formatter={(value: any) => [typeof value === 'number' ? value.toFixed(2) : value, "Average"]}
-                    labelStyle={{ color: "#374151" }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
         <TabsContent value="distributions">
           <Card>
             <CardHeader>
@@ -652,6 +412,42 @@ const TTestVisualization = ({
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value="comparison">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Group Comparison</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This chart compares the average values across your selected groups. 
+                The height of each bar represents the group's average value.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={groupComparisonData}>
+                  <XAxis 
+                    dataKey="group" 
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis />
+                  <Bar 
+                    dataKey="value" 
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Tooltip 
+                    formatter={(value: any) => [typeof value === 'number' ? value.toFixed(2) : value, "Average"]}
+                    labelStyle={{ color: "#374151" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {results.confidenceInterval && (
@@ -711,38 +507,5 @@ const TTestVisualization = ({
     </div>
   );
 };
-
-// Helper function for t-distribution PDF
-function tDistributionPDF(x: number, df: number): number {
-  const gamma1 = gammaFunction((df + 1) / 2);
-  const gamma2 = gammaFunction(df / 2);
-  const coefficient = gamma1 / (Math.sqrt(df * Math.PI) * gamma2);
-  return coefficient * Math.pow(1 + (x * x) / df, -(df + 1) / 2);
-}
-
-// Simplified gamma function approximation
-function gammaFunction(x: number): number {
-  if (x === 0.5) return Math.sqrt(Math.PI);
-  if (x === 1) return 1;
-  if (x === 1.5) return Math.sqrt(Math.PI) / 2;
-  if (x === 2) return 1;
-  if (x > 1) return (x - 1) * gammaFunction(x - 1);
-  
-  // Stirling's approximation for larger values
-  return Math.sqrt(2 * Math.PI / x) * Math.pow(x / Math.E, x);
-}
-
-function isInCriticalRegion(x: number, criticalValue: number, alternative: string): boolean {
-  switch (alternative) {
-    case "two-sided":
-      return Math.abs(x) >= criticalValue;
-    case "greater":
-      return x >= criticalValue;
-    case "less":
-      return x <= -criticalValue;
-    default:
-      return false;
-  }
-}
 
 export default TTestVisualization;
