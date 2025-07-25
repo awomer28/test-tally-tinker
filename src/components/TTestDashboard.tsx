@@ -806,15 +806,17 @@ const TTestDashboard = () => {
           </Card>
 
           {/* Visualization */}
-          <TTestVisualization 
-            results={results}
-            testType={results.testType === "anova" ? "anova" : 
-                     comparisonType === "compare-before-after" ? "paired" : 
-                     comparisonType === "compare-to-target" ? "one-sample" : "two-sample"}
-            groupingVariable={groupingVariable}
-            outcomeVariable={outcomeVariable}
-            successCategory={successCategory}
-          />
+          {comparisonType !== "compare-different-variables" && (
+            <TTestVisualization 
+              results={results}
+              testType={results.testType === "anova" ? "anova" : 
+                       comparisonType === "compare-before-after" ? "paired" : 
+                       comparisonType === "compare-to-target" ? "one-sample" : "two-sample"}
+              groupingVariable={groupingVariable}
+              outcomeVariable={outcomeVariable}
+              successCategory={successCategory}
+            />
+          )}
         </div>
       )}
     </div>
