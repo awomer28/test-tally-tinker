@@ -24,6 +24,16 @@ const TTestDashboard = () => {
   const [alternative, setAlternative] = useState("two-sided");
   const [results, setResults] = useState(null);
 
+  // Reset variables when comparison type changes
+  const handleComparisonTypeChange = (newType: string) => {
+    setComparisonType(newType);
+    // Reset to 2 variables for before-after and target comparisons, keep existing for others
+    if (newType === "compare-before-after" || newType === "compare-to-target") {
+      setSelectedVariables(["", ""]);
+    }
+    setResults(null);
+  };
+
   // Mock dataset variables - in real app this would come from uploaded data
   const numericalVariables = [
     "Income", "Age", "Education_Years", "Salary", "Test_Score_Before", 
@@ -180,7 +190,7 @@ const TTestDashboard = () => {
               {/* Comparison Type Selection */}
               <div>
                 <Label className="text-base font-medium">Type of comparison</Label>
-                <Select value={comparisonType} onValueChange={setComparisonType}>
+                <Select value={comparisonType} onValueChange={handleComparisonTypeChange}>
                   <SelectTrigger className="mt-2">
                     <SelectValue />
                   </SelectTrigger>
@@ -360,7 +370,9 @@ const TTestDashboard = () => {
                     </div>
                  ) : (
                   <div className="space-y-3">
-                    {selectedVariables.map((variable, index) => (
+                    {selectedVariables
+                      .slice(0, comparisonType === "compare-before-after" ? 2 : selectedVariables.length)
+                      .map((variable, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <div className="flex-1">
                            <Label className="text-base font-medium">
