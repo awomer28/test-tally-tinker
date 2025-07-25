@@ -652,6 +652,44 @@ const TTestDashboard = () => {
                         </TooltipContent>
                       </Tooltip>
                     </>
+                   )}
+
+                  {comparisonType === "compare-different-variables" && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">{results.groupNames?.[0]?.replace(/_/g, ' ') || "Variable 1"} average</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Average value for the first variable</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">{results.groupNames?.[1]?.replace(/_/g, ' ') || "Variable 2"} average</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Average value for the second variable</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
+                            <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">Effect size</div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Measures the practical significance of the difference (Cohen's d)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
                   )}
 
                   {comparisonType === "compare-before-after" && (
