@@ -71,6 +71,12 @@ export function calculateTwoSampleTTest(
   const var1 = data1.reduce((sum, x) => sum + Math.pow(x - mean1, 2), 0) / (n1 - 1);
   const var2 = data2.reduce((sum, x) => sum + Math.pow(x - mean2, 2), 0) / (n2 - 1);
   
+  // Calculate medians
+  const sorted1 = [...data1].sort((a, b) => a - b);
+  const sorted2 = [...data2].sort((a, b) => a - b);
+  const median1 = n1 % 2 === 0 ? (sorted1[n1/2 - 1] + sorted1[n1/2]) / 2 : sorted1[Math.floor(n1/2)];
+  const median2 = n2 % 2 === 0 ? (sorted2[n2/2 - 1] + sorted2[n2/2]) / 2 : sorted2[Math.floor(n2/2)];
+  
   let tStatistic: number;
   let df: number;
   let standardError: number;
@@ -111,6 +117,10 @@ export function calculateTwoSampleTTest(
     n2,
     mean1,
     mean2,
+    variance1: var1,
+    variance2: var2,
+    median1,
+    median2,
     tStatistic,
     df,
     pValue,
@@ -119,6 +129,7 @@ export function calculateTwoSampleTTest(
     alpha,
     alternative,
     effectSize,
+    groupNames,
     headline: interpretationData.headline,
     technicalDescription: interpretationData.technicalDescription
   };
@@ -272,6 +283,18 @@ export function calculateANOVA(
   );
   const overallMean = groups.flat().reduce((sum, x) => sum + x, 0) / n;
   
+  // Calculate group variances
+  const groupVariances = groups.map((group, i) => 
+    group.reduce((sum, x) => sum + Math.pow(x - groupMeans[i], 2), 0) / (group.length - 1)
+  );
+  
+  // Calculate group medians
+  const groupMedians = groups.map(group => {
+    const sorted = [...group].sort((a, b) => a - b);
+    const n = sorted.length;
+    return n % 2 === 0 ? (sorted[n/2 - 1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
+  });
+  
   // Calculate sum of squares
   const ssBetween = groups.reduce((sum, group, i) => 
     sum + group.length * Math.pow(groupMeans[i] - overallMean, 2), 0
@@ -312,6 +335,9 @@ export function calculateANOVA(
     n,
     k,
     groupMeans,
+    groupVariances,
+    groupMedians,
+    groupNames,
     overallMean,
     fStatistic,
     dfBetween,
