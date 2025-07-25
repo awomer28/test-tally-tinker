@@ -316,8 +316,8 @@ const TTestDashboard = () => {
                               </Select>
                             </div>
                            
-                            <div>
-                              <Label className="text-base font-medium">Success category</Label>
+                             <div>
+                               <Label className="text-base font-medium">Target outcome</Label>
                               <Select value={successCategory} onValueChange={setSuccessCategory} disabled={!outcomeVariable}>
                                 <SelectTrigger className="mt-2">
                                   <SelectValue placeholder={!outcomeVariable ? "Select outcome variable first" : "Which outcome counts as success?"} />
