@@ -94,7 +94,7 @@ const TTestDashboard = () => {
         const filteredVars = selectedVariables.filter(v => v);
         const data1 = generateMockData(filteredVars[0]);
         const data2 = generateMockData(filteredVars[1]);
-        testResults = calculateTwoSampleTTest(data1, data2, parseFloat(alpha), alternative, true, "mean", filteredVars);
+        testResults = calculateTwoSampleTTest(data1, data2, parseFloat(alpha), alternative, true, statisticType, filteredVars);
       } else if (comparisonType === "compare-groups" && groupingVariable && outcomeVariable) {
         if (statisticType === "proportion") {
           // Generate mock proportion data
@@ -200,23 +200,25 @@ const TTestDashboard = () => {
                 </Select>
                </div>
 
-               {/* Statistic Type Selection - only show for group comparisons */}
-               {comparisonType === "compare-groups" && (
-                 <div>
-                   <Label className="text-base font-medium">What to compare</Label>
-                   <Select value={statisticType} onValueChange={setStatisticType}>
-                     <SelectTrigger className="mt-2">
-                       <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="mean">Averages/means</SelectItem>
-                       <SelectItem value="median">Medians</SelectItem>
-                       <SelectItem value="variance">Variances</SelectItem>
-                       <SelectItem value="proportion">Rates/percentages</SelectItem>
-                     </SelectContent>
-                   </Select>
-                 </div>
-               )}
+                {/* Statistic Type Selection - show for group comparisons and different variables */}
+                {(comparisonType === "compare-groups" || comparisonType === "compare-different-variables") && (
+                  <div>
+                    <Label className="text-base font-medium">What to compare</Label>
+                    <Select value={statisticType} onValueChange={setStatisticType}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mean">Averages/means</SelectItem>
+                        <SelectItem value="median">Medians</SelectItem>
+                        <SelectItem value="variance">Variances</SelectItem>
+                        {comparisonType === "compare-groups" && (
+                          <SelectItem value="proportion">Rates/percentages</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
               {/* Variable Selection */}
               <div className="space-y-4">
@@ -441,16 +443,19 @@ const TTestDashboard = () => {
                         <SelectItem value="two-sided">
                           {comparisonType === "compare-to-target" ? "Is there any difference from target?" :
                            comparisonType === "compare-before-after" ? "Is there any change?" :
+                           comparisonType === "compare-different-variables" ? `Are these variables ${statisticType === 'mean' ? 'averages' : statisticType === 'median' ? 'medians' : 'variances'} different?` :
                            "Are the groups different?"}
                         </SelectItem>
                         <SelectItem value="greater">
                           {comparisonType === "compare-to-target" ? "Is the variable higher than target?" :
                            comparisonType === "compare-before-after" ? "Did values increase?" :
+                           comparisonType === "compare-different-variables" ? `Is first variable ${statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} higher?` :
                            "Is first group higher?"}
                         </SelectItem>
                         <SelectItem value="less">
                           {comparisonType === "compare-to-target" ? "Is the variable lower than target?" :
                            comparisonType === "compare-before-after" ? "Did values decrease?" :
+                           comparisonType === "compare-different-variables" ? `Is first variable ${statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} lower?` :
                            "Is first group lower?"}
                         </SelectItem>
                       </SelectContent>
