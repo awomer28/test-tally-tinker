@@ -259,40 +259,62 @@ const TTestDashboard = () => {
                     <div className="space-y-4">
                        {statisticType === "proportion" ? (
                          <>
-                           <div>
-                             <Label className="text-base font-medium">Grouping variable (categorical)</Label>
-                             <Select value={groupingVariable} onValueChange={setGroupingVariable}>
-                               <SelectTrigger className="mt-2">
-                                 <SelectValue placeholder="Choose how to divide into groups" />
-                               </SelectTrigger>
-                               <SelectContent>
-                                 {categoricalVariables.filter(v => v !== outcomeVariable).map((variable) => (
-                                   <SelectItem key={variable} value={variable}>
-                                     {variable.replace(/_/g, ' ')}
-                                   </SelectItem>
-                                 ))}
-                               </SelectContent>
-                             </Select>
-                           </div>
-                           
-                           <div>
-                             <Label className="text-base font-medium">Outcome variable (categorical)</Label>
-                             <Select value={outcomeVariable} onValueChange={(value) => {
-                               setOutcomeVariable(value);
-                               setSuccessCategory(""); // Reset success category when outcome changes
-                             }}>
-                               <SelectTrigger className="mt-2">
-                                 <SelectValue placeholder="Choose what you're measuring (Pass/Fail, Yes/No, etc.)" />
-                               </SelectTrigger>
-                               <SelectContent>
-                                 {categoricalVariables.filter(v => v !== groupingVariable).map((variable) => (
-                                   <SelectItem key={variable} value={variable}>
-                                     {variable.replace(/_/g, ' ')}
-                                   </SelectItem>
-                                 ))}
-                               </SelectContent>
-                             </Select>
-                           </div>
+                            <div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <Label className="text-base font-medium cursor-help">Grouping variable (categorical)</Label>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>The variable that defines your comparison groups (e.g., male/female, treatment/control)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <Select value={groupingVariable} onValueChange={setGroupingVariable}>
+                                <SelectTrigger className="mt-2">
+                                  <SelectValue placeholder="Choose how to divide into groups" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categoricalVariables.filter(v => v !== outcomeVariable).map((variable) => (
+                                    <SelectItem key={variable} value={variable}>
+                                      {variable.replace(/_/g, ' ')}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <Label className="text-base font-medium cursor-help">Outcome variable (categorical)</Label>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>The variable containing the categories you want to analyze (e.g., pass/fail, yes/no)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <Select value={outcomeVariable} onValueChange={(value) => {
+                                setOutcomeVariable(value);
+                                setSuccessCategory(""); // Reset success category when outcome changes
+                              }}>
+                                <SelectTrigger className="mt-2">
+                                  <SelectValue placeholder="Choose what you're measuring (Pass/Fail, Yes/No, etc.)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categoricalVariables.filter(v => v !== groupingVariable).map((variable) => (
+                                    <SelectItem key={variable} value={variable}>
+                                      {variable.replace(/_/g, ' ')}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                            
                             <div>
                               <Label className="text-base font-medium">Success category</Label>
