@@ -673,37 +673,74 @@ const TTestDashboard = () => {
 
                   {comparisonType === "compare-different-variables" && (
                     <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
-                            <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">{results.groupNames?.[0]?.replace(/_/g, ' ') || "Variable 1"} average</div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Average value for the first variable</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
-                            <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">{results.groupNames?.[1]?.replace(/_/g, ' ') || "Variable 2"} average</div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Average value for the second variable</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      {/* Dynamic rendering based on number of variables */}
+                      {results.testType === "anova" && results.groupMeans ? (
+                        // ANOVA results - show all group means
+                        results.groupMeans.map((mean, index) => (
+                          <Tooltip key={index}>
+                            <TooltipTrigger asChild>
+                              <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                                <div className="text-2xl font-bold text-primary">{mean?.toFixed(2)}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {results.groupNames?.[index]?.replace(/_/g, ' ') || `Variable ${index + 1}`} {statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{statisticType === 'mean' ? 'Average' : statisticType === 'median' ? 'Median' : 'Variance'} value for {results.groupNames?.[index]?.replace(/_/g, ' ') || `Variable ${index + 1}`}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ))
+                      ) : (
+                        // Two-sample t-test results - show two means
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="text-center p-4 bg-primary/5 rounded-lg cursor-help">
+                                <div className="text-2xl font-bold text-primary">{results.mean1?.toFixed(2)}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {results.groupNames?.[0]?.replace(/_/g, ' ') || "Variable 1"} {statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{statisticType === 'mean' ? 'Average' : statisticType === 'median' ? 'Median' : 'Variance'} value for the first variable</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="text-center p-4 bg-secondary/5 rounded-lg cursor-help">
+                                <div className="text-2xl font-bold text-secondary-foreground">{results.mean2?.toFixed(2)}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {results.groupNames?.[1]?.replace(/_/g, ' ') || "Variable 2"} {statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{statisticType === 'mean' ? 'Average' : statisticType === 'median' ? 'Median' : 'Variance'} value for the second variable</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </>
+                      )}
+                      
+                      {/* Effect size - only show for t-test, eta squared for ANOVA */}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="text-center p-4 bg-accent/5 rounded-lg cursor-help">
-                            <div className="text-2xl font-bold text-accent-foreground">{results.effectSize?.toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">Effect size</div>
+                            <div className="text-2xl font-bold text-accent-foreground">
+                              {results.testType === "anova" ? results.etaSquared?.toFixed(3) : results.effectSize?.toFixed(2)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {results.testType === "anova" ? "Eta squared" : "Effect size"}
+                            </div>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Measures the practical significance of the difference (Cohen's d)</p>
+                          <p>
+                            {results.testType === "anova" 
+                              ? "Measures the proportion of variance explained by group differences" 
+                              : "Measures the practical significance of the difference (Cohen's d)"}
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </>
