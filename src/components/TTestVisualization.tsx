@@ -13,6 +13,7 @@ interface TTestVisualizationProps {
   successCategory?: string;
   beforeData?: number[];
   afterData?: number[];
+  statisticType?: string;
 }
 
 const TTestVisualization = ({ 
@@ -22,7 +23,8 @@ const TTestVisualization = ({
   outcomeVariable, 
   successCategory,
   beforeData,
-  afterData 
+  afterData,
+  statisticType = "mean"
 }: TTestVisualizationProps) => {
   // Add null checks to prevent errors
   if (!results || typeof results !== 'object') {
@@ -62,20 +64,38 @@ const TTestVisualization = ({
   }, [results]);
 
   const groupComparisonData = useMemo(() => {
-    if (actualTestType === "anova" && results.groupMeans && results.groupNames) {
+    // Function to get the correct value based on statistic type
+    const getStatisticValue = (results: any, groupIndex?: number) => {
+      if (statisticType === "median") {
+        return actualTestType === "anova" && results.groupMedians 
+          ? results.groupMedians[groupIndex] 
+          : groupIndex === 0 ? results.median1 : results.median2;
+      } else if (statisticType === "variance") {
+        return actualTestType === "anova" && results.groupVariances 
+          ? results.groupVariances[groupIndex] 
+          : groupIndex === 0 ? results.variance1 : results.variance2;
+      } else {
+        // Default to mean
+        return actualTestType === "anova" && results.groupMeans 
+          ? results.groupMeans[groupIndex] 
+          : groupIndex === 0 ? results.mean1 : results.mean2;
+      }
+    };
+
+    if (actualTestType === "anova" && results.groupNames) {
       return results.groupNames.map((name, index) => ({
         group: name.replace(/_/g, ' '),
-        value: results.groupMeans[index],
+        value: getStatisticValue(results, index),
         isSignificant: results.isSignificant
       }));
     } else if (actualTestType === "two-sample" && results.mean1 !== undefined && results.mean2 !== undefined) {
       return [
-        { group: results.groupNames?.[0]?.replace(/_/g, ' ') || "Group 1", value: results.mean1, isSignificant: results.isSignificant },
-        { group: results.groupNames?.[1]?.replace(/_/g, ' ') || "Group 2", value: results.mean2, isSignificant: results.isSignificant }
+        { group: results.groupNames?.[0]?.replace(/_/g, ' ') || "Group 1", value: getStatisticValue(results, 0), isSignificant: results.isSignificant },
+        { group: results.groupNames?.[1]?.replace(/_/g, ' ') || "Group 2", value: getStatisticValue(results, 1), isSignificant: results.isSignificant }
       ];
     }
     return [];
-  }, [results, actualTestType]);
+  }, [results, actualTestType, statisticType]);
 
   // Create distribution data for histogram visualization
   const distributionComparisonData = useMemo(() => {
@@ -416,10 +436,10 @@ const TTestVisualization = ({
         <TabsContent value="comparison">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Group Comparison</CardTitle>
+              <CardTitle className="text-lg">Group {statisticType === 'mean' ? 'Average' : statisticType === 'median' ? 'Median' : 'Variance'} Comparison</CardTitle>
               <p className="text-sm text-muted-foreground">
-                This chart compares the average values across your selected groups. 
-                The height of each bar represents the group's average value.
+                This chart compares the {statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} values across your selected groups. 
+                The height of each bar represents the group's {statisticType === 'mean' ? 'average' : statisticType === 'median' ? 'median' : 'variance'} value.
               </p>
             </CardHeader>
             <CardContent>
@@ -440,7 +460,10 @@ const TTestVisualization = ({
                     radius={[4, 4, 0, 0]}
                   />
                   <Tooltip 
-                    formatter={(value: any) => [typeof value === 'number' ? value.toFixed(2) : value, "Average"]}
+                    formatter={(value: any) => [
+                      typeof value === 'number' ? value.toFixed(2) : value, 
+                      statisticType === 'mean' ? 'Average' : statisticType === 'median' ? 'Median' : 'Variance'
+                    ]}
                     labelStyle={{ color: "#374151" }}
                   />
                 </BarChart>

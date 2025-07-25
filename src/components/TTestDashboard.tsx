@@ -881,6 +881,7 @@ const TTestDashboard = () => {
               groupingVariable={groupingVariable}
               outcomeVariable={outcomeVariable}
               successCategory={successCategory}
+              statisticType={statisticType}
             />
           )}
         </div>
