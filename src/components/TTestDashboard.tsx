@@ -363,12 +363,12 @@ const TTestDashboard = () => {
                     {selectedVariables.map((variable, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <div className="flex-1">
-                          <Label className="text-base font-medium">
-                            {comparisonType === "compare-before-after" ? 
-                              (index === 0 ? "Before variable" : "After variable") :
-                              `${index === 0 ? "First" : index === 1 ? "Second" : `Group ${index + 1}`} group variable`
-                            }
-                          </Label>
+                           <Label className="text-base font-medium">
+                             {comparisonType === "compare-before-after" ? 
+                               (index === 0 ? "Before variable" : "After variable") :
+                               `${index === 0 ? "First" : index === 1 ? "Second" : `Variable ${index + 1}`} variable`
+                             }
+                           </Label>
                           <Select value={variable} onValueChange={(value) => updateVariable(index, value)}>
                             <SelectTrigger className="mt-2">
                               <SelectValue placeholder="Choose a variable" />
