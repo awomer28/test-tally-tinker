@@ -373,7 +373,7 @@ const TTestDashboard = () => {
                             </Select>
                           </div>
                            <div>
-                             <Label className="text-base font-medium">What do you want to measure?</Label>
+                             <Label className="text-base font-medium">Which variable do you want to compare?</Label>
                              <Select value={outcomeVariable} onValueChange={setOutcomeVariable}>
                               <SelectTrigger className="mt-2">
                                 <SelectValue placeholder="Choose a numerical variable (e.g., Test Score, Income, Age)" />
