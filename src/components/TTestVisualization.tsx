@@ -37,6 +37,8 @@ const TTestVisualization = ({
   // Debug logging for chart data
   console.log("actualTestType:", actualTestType);
   console.log("results:", results);
+  console.log("groupNames:", results.groupNames);
+  console.log("groupMeans:", results.groupMeans);
 
   // For paired tests, show no visualization
   if (actualTestType === "paired") {
@@ -147,24 +149,36 @@ const TTestVisualization = ({
           [results.groupNames?.[1] || "Group 2"]: group2Data[index]?.[results.groupNames?.[1] || "Group 2"] || 0,
           [`${results.groupNames?.[1] || "Group 2"}_color`]: colors[1]
         }));
-      } else if (actualTestType === "anova" && results.groupMeans) {
+      } else if (actualTestType === "anova" && results.groupMeans && results.groupMeans.length > 0) {
         // For ANOVA with multiple groups
-        const allGroupData = results.groupMeans.map((mean, index) => 
-          generateGroupDistribution(mean, results.groupNames?.[index] || `Group ${index + 1}`, colors[index % colors.length])
-        );
+        console.log("Generating ANOVA distribution data for", results.groupMeans.length, "groups");
+        const allGroupData = results.groupMeans.map((mean, index) => {
+          const groupName = results.groupNames?.[index] || `Group ${index + 1}`;
+          console.log(`Generating distribution for ${groupName} with mean ${mean}`);
+          return generateGroupDistribution(mean, groupName, colors[index % colors.length]);
+        });
         
-        // Merge all group data by bin
-        distributionData = allGroupData[0]?.map((bin, binIndex) => {
-          const mergedBin = { ...bin };
-          allGroupData.forEach((groupData, groupIndex) => {
-            const groupName = results.groupNames?.[groupIndex] || `Group ${groupIndex + 1}`;
-            if (groupIndex > 0) {
-              mergedBin[groupName] = groupData[binIndex]?.[groupName] || 0;
-              mergedBin[`${groupName}_color`] = colors[groupIndex % colors.length];
-            }
+        console.log("Generated group data:", allGroupData);
+        
+        // Start with the first group's data as the base
+        if (allGroupData.length > 0 && allGroupData[0].length > 0) {
+          distributionData = allGroupData[0].map((bin, binIndex) => {
+            const mergedBin = { ...bin };
+            
+            // Add data from all other groups to each bin
+            allGroupData.forEach((groupData, groupIndex) => {
+              const groupName = results.groupNames?.[groupIndex] || `Group ${groupIndex + 1}`;
+              if (groupIndex > 0 && groupData[binIndex]) {
+                mergedBin[groupName] = groupData[binIndex][groupName] || 0;
+                mergedBin[`${groupName}_color`] = colors[groupIndex % colors.length];
+              }
+            });
+            
+            return mergedBin;
           });
-          return mergedBin;
-        }) || [];
+        }
+        
+        console.log("Final distributionData:", distributionData);
       }
       
       return distributionData;
@@ -217,6 +231,8 @@ const TTestVisualization = ({
   // Debug logging for chart data arrays
   console.log("outcomeRatesData:", outcomeRatesData);
   console.log("groupBreakdownData:", groupBreakdownData);
+  console.log("distributionComparisonData:", distributionComparisonData);
+  console.log("groupComparisonData:", groupComparisonData);
 
   return (
     <div className="space-y-6">
@@ -380,17 +396,21 @@ const TTestVisualization = ({
                   <YAxis 
                     label={{ value: 'Frequency', angle: -90, position: 'insideLeft' }}
                   />
-                  {results.groupNames?.map((groupName, index) => (
-                    <Area 
-                      key={groupName}
-                      type="monotone" 
-                      dataKey={groupName} 
-                      stroke={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} 
-                      fill={`url(#gradient-${index})`}
-                      strokeWidth={2}
-                      name={groupName?.replace(/_/g, ' ')}
-                    />
-                  ))}
+                   {results.groupNames?.map((groupName, index) => {
+                     console.log(`Rendering Area for ${groupName} at index ${index}`);
+                     return (
+                       <Area 
+                         key={`area-${groupName}-${index}`}
+                         type="monotone" 
+                         dataKey={groupName} 
+                         stroke={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} 
+                         fill={`url(#gradient-${index})`}
+                         strokeWidth={2}
+                         name={groupName?.replace(/_/g, ' ')}
+                         connectNulls={false}
+                       />
+                     );
+                   })}
                   <Tooltip 
                     formatter={(value: any, name: string) => [
                       `${typeof value === 'number' ? value.toFixed(0) : value}`, 
