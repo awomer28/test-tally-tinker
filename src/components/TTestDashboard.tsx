@@ -198,7 +198,7 @@ const TTestDashboard = () => {
                      <SelectItem value="compare-groups">
                        <div className="flex items-center gap-2">
                          <Users className="w-4 h-4" />
-                         Compare averages between groups
+                         Compare between groups
                        </div>
                      </SelectItem>
                      <SelectItem value="compare-different-variables">
